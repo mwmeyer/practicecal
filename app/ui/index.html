@@ -1,49 +1,212 @@
-<!DOCTYPE html>
-<head>
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
-  >
-  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js"></script>
-</head>
-<body>
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>GraphQL Todo App</title>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+        />
+    </head>
+    <body>
+        <main class="container">
+            <h1>To-Do List 📝</h1>
 
-  <main class="container">
-    <h1>To-Do List 📝</h1>
+            <form id="todo-form">
+                <input
+                    type="text"
+                    id="task-input"
+                    name="task"
+                    placeholder="New to-do"
+                    required
+                    autocomplete="off"
+                />
+                <button type="submit">Add</button>
+            </form>
 
-    <form
-      hx-post="/todos"
-      hx-target="#todo-list"
-      hx-swap="beforeend"
-    >
-      <input type="text" name="task" placeholder="New to-do" required>
-      <button type="submit">Add</button>
-    </form>
+            <ul id="todo-list">
+                <!-- Todos will be loaded here -->
+            </ul>
 
-    <ul id="todo-list">
-      <li>
-        <span>Buy milk</span>
+            <div id="loading" aria-busy="true" style="display: none">
+                Loading...
+            </div>
+            <div
+                id="error"
+                style="display: none; color: var(--pico-color-red-500)"
+            ></div>
+        </main>
+
+        <script>
+            const API_URL = "/graphql";
+
+            // GraphQL request helper
+            async function graphqlRequest(query, variables = {}) {
+                try {
+                    const response = await fetch(API_URL, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            query,
+                            variables,
+                        }),
+                    });
+
+                    const data = await response.json();
+
+                    if (data.errors) {
+                        throw new Error(data.errors[0].message);
+                    }
+
+                    return data.data;
+                } catch (error) {
+                    console.error("GraphQL Error:", error);
+                    showError(error.message);
+                    throw error;
+                }
+            }
+
+            // UI helper functions
+            function showLoading() {
+                document.getElementById("loading").style.display = "block";
+            }
+
+            function hideLoading() {
+                document.getElementById("loading").style.display = "none";
+            }
+
+            function showError(message) {
+                const errorElement = document.getElementById("error");
+                errorElement.textContent = `Error: ${message}`;
+                errorElement.style.display = "block";
+                setTimeout(() => {
+                    errorElement.style.display = "none";
+                }, 5000);
+            }
+
+            // Todo operations
+            async function loadTodos() {
+                showLoading();
+                try {
+                    const data = await graphqlRequest(`
+          query {
+            todos {
+              id
+              task
+            }
+          }
+        `);
+
+                    renderTodos(data.todos);
+                } catch (error) {
+                    console.error("Failed to load todos:", error);
+                } finally {
+                    hideLoading();
+                }
+            }
+
+            async function addTodo(task) {
+                try {
+                    const data = await graphqlRequest(
+                        `
+          mutation($task: String!) {
+            addTodo(task: $task) {
+              id
+              task
+            }
+          }
+        `,
+                        { task },
+                    );
+
+                    const newTodo = data.addTodo;
+                    appendTodoToList(newTodo);
+
+                    // Clear the input
+                    document.getElementById("task-input").value = "";
+                } catch (error) {
+                    console.error("Failed to add todo:", error);
+                }
+            }
+
+            async function deleteTodo(id) {
+                try {
+                    const data = await graphqlRequest(`
+          mutation {
+            deleteTodo(id: ${id})
+          }
+        `);
+
+                    if (data.deleteTodo) {
+                        // Remove from DOM
+                        const todoElement = document.querySelector(
+                            `[data-todo-id="${id}"]`,
+                        );
+                        if (todoElement) {
+                            todoElement.remove();
+                        }
+                    }
+                } catch (error) {
+                    console.error("Failed to delete todo:", error);
+                }
+            }
+
+            // Rendering functions
+            function renderTodos(todos) {
+                const todoList = document.getElementById("todo-list");
+                todoList.innerHTML = "";
+
+                todos.forEach((todo) => {
+                    appendTodoToList(todo);
+                });
+            }
+
+            function appendTodoToList(todo) {
+                const todoList = document.getElementById("todo-list");
+                const li = document.createElement("li");
+                li.setAttribute("data-todo-id", todo.id);
+                li.innerHTML = `
+        <span>${escapeHtml(todo.task)}</span>
         <button
-          hx-delete="/todos/1"
-          hx-target="closest li"
-          hx-swap="outerHTML"
+          class="delete-btn"
+          onclick="deleteTodo(${todo.id})"
+          title="Delete todo"
         >
           ❌
         </button>
-      </li>
-      <li>
-        <span>Read a book</span>
-        <button
-          hx-delete="/todos/2"
-          hx-target="closest li"
-          hx-swap="outerHTML"
-        >
-          ❌
-        </button>
-      </li>
-    </ul>
+      `;
 
-  </main>
+                todoList.appendChild(li);
+            }
 
-</body>
+            // Utility function to escape HTML
+            function escapeHtml(text) {
+                const div = document.createElement("div");
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // Event listeners
+            document
+                .getElementById("todo-form")
+                .addEventListener("submit", async (e) => {
+                    e.preventDefault();
+
+                    const taskInput = document.getElementById("task-input");
+                    const task = taskInput.value.trim();
+
+                    if (task) {
+                        await addTodo(task);
+                    }
+                });
+
+            // Load todos when page loads
+            document.addEventListener("DOMContentLoaded", () => {
+                loadTodos();
+            });
+        </script>
+    </body>
 </html>
