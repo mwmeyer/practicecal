@@ -2,8 +2,6 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from typing import List, Optional
 
-from .routers import items, users
-
 import strawberry
 
 from strawberry.fastapi import GraphQLRouter
@@ -62,12 +60,7 @@ schema = strawberry.Schema(query=Query, mutation=Mutation)
 
 graphql_app = GraphQLRouter(schema)
 
-
-app = FastAPI()
-
-
-app.include_router(users.router)
-app.include_router(items.router)
+app = FastAPI(docs_url=None, redoc_url=None)
 
 app.include_router(graphql_app, prefix="/graphql")
 

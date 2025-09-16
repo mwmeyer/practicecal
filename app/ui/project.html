@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Project Details - FastRQL</title>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+        />
+        <style>
+            :root {
+                --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+                --hover-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            }
+
+            body {
+                background: var(--gradient-bg);
+                min-height: 100vh;
+                margin: 0;
+                color: white;
+            }
+
+            .container {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 2rem 1rem;
+            }
+
+            .back-button {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                color: white;
+                text-decoration: none;
+                margin-bottom: 2rem;
+                padding: 0.5rem 1rem;
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.1);
+                transition: all 0.3s ease;
+            }
+
+            .back-button:hover {
+                background: rgba(255, 255, 255, 0.2);
+                text-decoration: none;
+                transform: translateX(-2px);
+            }
+
+            .project-header {
+                background: white;
+                color: #1a1a1a;
+                padding: 2rem;
+                border-radius: 16px;
+                box-shadow: var(--card-shadow);
+                margin-bottom: 2rem;
+            }
+
+            .project-title-section {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .project-color-bar {
+                width: 6px;
+                height: 80px;
+                border-radius: 3px;
+            }
+
+            .project-title {
+                font-size: 2.5rem;
+                font-weight: 700;
+                margin: 0;
+                flex: 1;
+            }
+
+            .edit-button {
+                padding: 0.5rem 1rem;
+                background: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .edit-button:hover {
+                background: #2563eb;
+                transform: translateY(-1px);
+            }
+
+            .project-meta {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1.5rem;
+                margin-bottom: 2rem;
+            }
+
+            .meta-item {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .meta-label {
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: #6b7280;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .meta-value {
+                font-size: 1.1rem;
+                font-weight: 500;
+            }
+
+            .project-status {
+                display: inline-block;
+                padding: 0.5rem 1rem;
+                border-radius: 20px;
+                font-size: 0.9rem;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+
+            .status-planning { background: #fef3c7; color: #92400e; }
+            .status-in_progress { background: #dbeafe; color: #1e40af; }
+            .status-completed { background: #d1fae5; color: #065f46; }
+            .status-on_hold { background: #fee2e2; color: #991b1b; }
+            .status-cancelled { background: #f3f4f6; color: #374151; }
+
+            .project-description {
+                font-size: 1.1rem;
+                line-height: 1.7;
+                color: #4b5563;
+                margin-bottom: 2rem;
+            }
+
+            .tech-stack {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .tech-badge {
+                background: #f3f4f6;
+                color: #374151;
+                padding: 0.5rem 1rem;
+                border-radius: 8px;
+                font-weight: 500;
+            }
+
+            .project-section {
+                background: white;
+                color: #1a1a1a;
+                padding: 2rem;
+                border-radius: 16px;
+                box-shadow: var(--card-shadow);
+                margin-bottom: 2rem;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+                font-weight: 600;
+                margin-bottom: 1rem;
+                color: #1a1a1a;
+            }
+
+            .loading {
+                text-align: center;
+                padding: 4rem 0;
+            }
+
+            .spinner {
+                border: 4px solid rgba(255, 255, 255, 0.3);
+                border-top: 4px solid white;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 1rem;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+
+            .error {
+                background: #fee2e2;
+                color: #991b1b;
+                padding: 1rem;
+                border-radius: 8px;
+                margin: 1rem 0;
+            }
+
+            .modal {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1000;
+            }
+
+            .modal.active {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .modal-content {
+                background: white;
+                padding: 2rem;
+                border-radius: 16px;
+                width: 90%;
+                max-width: 500px;
+                max-height: 90vh;
+                overflow-y: auto;
+                color: #1a1a1a;
+            }
+
+            .form-row {
+                display: flex;
+                gap: 1rem;
+            }
+
+            .form-row > * {
+                flex: 1;
+            }
+
+            .delete-button {
+                background: #ef4444;
+                color: white;
+                margin-top: 1rem;
+            }
+
+            .delete-button:hover {
+                background: #dc2626;
+            }
+
+            .project-dates {
+                font-size: 0.9rem;
+                color: #6b7280;
+                margin-top: 1rem;
+                padding-top: 1rem;
+                border-top: 1px solid #e5e7eb;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <a href="/" class="back-button">
+                ← Back to Projects
+            </a>
+
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading project...</p>
+            </div>
+
+            <div id="error" class="error" style="display: none"></div>
+
+            <div id="project-content" style="display: none">
+                <div class="project-header">
+                    <div class="project-title-section">
+                        <div id="project-color" class="project-color-bar"></div>
+                        <h1 id="project-title" class="project-title"></h1>
+                        <button class="edit-button" onclick="openEditModal()">
+                            Edit Project
+                        </button>
+                    </div>
+
+                    <div class="project-meta">
+                        <div class="meta-item">
+                            <div class="meta-label">Status</div>
+                            <div class="meta-value">
+                                <span id="project-status" class="project-status"></span>
+                            </div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Category</div>
+                            <div id="project-category" class="meta-value"></div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Project ID</div>
+                            <div id="project-id" class="meta-value"></div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Slug</div>
+                            <div id="project-slug" class="meta-value"></div>
+                        </div>
+                    </div>
+
+                    <div id="project-description" class="project-description"></div>
+
+                    <div class="project-dates">
+                        <div><strong>Created:</strong> <span id="created-date"></span></div>
+                        <div><strong>Last Updated:</strong> <span id="updated-date"></span></div>
+                    </div>
+                </div>
+
+                <div class="project-section">
+                    <h2 class="section-title">Tech Stack</h2>
+                    <div id="tech-stack" class="tech-stack">
+                        <!-- Tech stack will be populated here -->
+                    </div>
+                </div>
+
+                <div class="project-section">
+                    <h2 class="section-title">Project Workspace</h2>
+                    <p>This is where you would build out your project-specific tools, code editor, deployment settings, and collaboration features - just like Lovable!</p>
+                    <p><em>Coming soon: Integrated development environment, real-time collaboration, automated deployments, and more.</em></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Project Modal -->
+        <div id="edit-modal" class="modal">
+            <div class="modal-content">
+                <h2>Edit Project</h2>
+                <form id="edit-form">
+                    <div class="form-row">
+                        <div>
+                            <label for="edit-name">Project Name *</label>
+                            <input type="text" id="edit-name" name="name" required />
+                        </div>
+                        <div>
+                            <label for="edit-category">Category</label>
+                            <select id="edit-category" name="category">
+                                <option value="WEB_APP">Web App</option>
+                                <option value="MOBILE_APP">Mobile App</option>
+                                <option value="API">API</option>
+                                <option value="LIBRARY">Library</option>
+                                <option value="TOOL">Tool</option>
+                                <option value="GAME">Game</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <label for="edit-description">Description *</label>
+                    <textarea id="edit-description" name="description" rows="3" required></textarea>
+
+                    <div class="form-row">
+                        <div>
+                            <label for="edit-status">Status</label>
+                            <select id="edit-status" name="status">
+                                <option value="PLANNING">Planning</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="ON_HOLD">On Hold</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="edit-color">Color</label>
+                            <input type="color" id="edit-color" name="color" />
+                        </div>
+                    </div>
+
+                    <label for="edit-tech-stack">Tech Stack (comma-separated)</label>
+                    <input type="text" id="edit-tech-stack" name="tech_stack" placeholder="React, TypeScript, Node.js" />
+
+                    <div style="display: flex; gap: 1rem; justify-content: space-between; margin-top: 2rem;">
+                        <button type="button" class="delete-button" onclick="deleteProject()">
+                            Delete Project
+                        </button>
+                        <div style="display: flex; gap: 1rem;">
+                            <button type="button" onclick="closeEditModal()">Cancel</button>
+                            <button type="submit">Save Changes</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            const API_URL = "/graphql";
+            let currentProject = null;
+
+            // Get project slug from URL
+            function getProjectSlug() {
+                const path = window.location.pathname;
+                const parts = path.split('/');
+                return parts[parts.length - 1] || parts[parts.length - 2];
+            }
+
+            // GraphQL request helper
+            async function graphqlRequest(query, variables = {}) {
+                try {
+                    const response = await fetch(API_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ query, variables }),
+                    });
+
+                    const data = await response.json();
+
+                    if (data.errors) {
+                        throw new Error(data.errors[0].message);
+                    }
+
+                    return data.data;
+                } catch (error) {
+                    console.error("GraphQL Error:", error);
+                    showError(error.message);
+                    throw error;
+                }
+            }
+
+            // UI helpers
+            function showLoading() {
+                document.getElementById("loading").style.display = "block";
+                document.getElementById("project-content").style.display = "none";
+            }
+
+            function hideLoading() {
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("project-content").style.display = "block";
+            }
+
+            function showError(message) {
+                const errorElement = document.getElementById("error");
+                errorElement.textContent = `Error: ${message}`;
+                errorElement.style.display = "block";
+                setTimeout(() => {
+                    errorElement.style.display = "none";
+                }, 5000);
+            }
+
+            // Load project data
+            async function loadProject() {
+                showLoading();
+                try {
+                    const slug = getProjectSlug();
+                    const data = await graphqlRequest(`
+                        query($slug: String!) {
+                            project(slug: $slug) {
+                                id
+                                name
+                                description
+                                status
+                                techStack
+                                category
+                                color
+                                slug
+                                createdAt
+                                updatedAt
+                            }
+                        }
+                    `, { slug });
+
+                    if (!data.project) {
+                        throw new Error("Project not found");
+                    }
+
+                    currentProject = data.project;
+                    renderProject(data.project);
+                } catch (error) {
+                    console.error("Failed to load project:", error);
+                    showError("Failed to load project. Please check the URL and try again.");
+                } finally {
+                    hideLoading();
+                }
+            }
+
+            // Render project
+            function renderProject(project) {
+                document.getElementById("project-title").textContent = project.name;
+                document.getElementById("project-color").style.background = project.color;
+                document.getElementById("project-description").textContent = project.description;
+                document.getElementById("project-id").textContent = project.id;
+                document.getElementById("project-slug").textContent = project.slug;
+                document.getElementById("project-category").textContent = project.category.replace("_", " ");
+
+                // Status
+                const statusElement = document.getElementById("project-status");
+                statusElement.textContent = project.status.replace("_", " ");
+                statusElement.className = `project-status status-${project.status.toLowerCase()}`;
+
+                // Tech stack
+                const techStackElement = document.getElementById("tech-stack");
+                techStackElement.innerHTML = "";
+                if (project.techStack.length === 0) {
+                    techStackElement.innerHTML = "<p>No technologies specified</p>";
+                } else {
+                    project.techStack.forEach(tech => {
+                        const badge = document.createElement("span");
+                        badge.className = "tech-badge";
+                        badge.textContent = tech;
+                        techStackElement.appendChild(badge);
+                    });
+                }
+
+                // Dates
+                document.getElementById("created-date").textContent = new Date(project.createdAt).toLocaleString();
+                document.getElementById("updated-date").textContent = new Date(project.updatedAt).toLocaleString();
+
+                // Update page title
+                document.title = `${project.name} - FastRQL`;
+            }
+
+            // Modal functions
+            function openEditModal() {
+                if (!currentProject) return;
+
+                document.getElementById("edit-name").value = currentProject.name;
+                document.getElementById("edit-description").value = currentProject.description;
+                document.getElementById("edit-status").value = currentProject.status;
+                document.getElementById("edit-category").value = currentProject.category;
+                document.getElementById("edit-color").value = currentProject.color;
+                document.getElementById("edit-tech-stack").value = currentProject.techStack.join(", ");
+
+                document.getElementById("edit-modal").classList.add("active");
+            }
+
+            function closeEditModal() {
+                document.getElementById("edit-modal").classList.remove("active");
+                document.getElementById("edit-form").reset();
+            }
+
+            // Update project
+            async function updateProject(formData) {
+                try {
+                    const techStack = formData.tech_stack
+                        ? formData.tech_stack.split(",").map(s => s.trim()).filter(s => s)
+                        : [];
+
+                    const data = await graphqlRequest(`
+                        mutation($id: Int!, $input: UpdateProjectInput!) {
+                            updateProject(id: $id, input: $input) {
+                                id
+                                name
+                                description
+                                status
+                                techStack
+                                category
+                                color
+                                slug
+                                createdAt
+                                updatedAt
+                            }
+                        }
+                    `, {
+                        id: currentProject.id,
+                        input: {
+                            name: formData.name,
+                            description: formData.description,
+                            status: formData.status,
+                            techStack: techStack,
+                            category: formData.category,
+                            color: formData.color,
+                        },
+                    });
+
+                    currentProject = data.updateProject;
+                    renderProject(data.updateProject);
+                    closeEditModal();
+
+                    // Update URL if slug changed
+                    if (window.location.pathname.split('/').pop() !== data.updateProject.slug) {
+                        window.history.replaceState({}, '', `/project/${data.updateProject.slug}`);
+                    }
+                } catch (error) {
+                    console.error("Failed to update project:", error);
+                }
+            }
+
+            // Delete project
+            async function deleteProject() {
+                if (!currentProject) return;
+
+                if (!confirm(`Are you sure you want to delete "${currentProject.name}"? This action cannot be undone.`)) {
+                    return;
+                }
+
+                try {
+                    await graphqlRequest(`
+                        mutation($id: Int!) {
+                            deleteProject(id: $id)
+                        }
+                    `, { id: currentProject.id });
+
+                    // Redirect to home
+                    window.location.href = "/";
+                } catch (error) {
+                    console.error("Failed to delete project:", error);
+                }
+            }
+
+            // Event listeners
+            document.getElementById("edit-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData.entries());
+                await updateProject(data);
+            });
+
+            document.getElementById("edit-modal").addEventListener("click", (e) => {
+                if (e.target.id === "edit-modal") {
+                    closeEditModal();
+                }
+            });
+
+            // Load project on page load
+            document.addEventListener("DOMContentLoaded", () => {
+                loadProject();
+            });
+        </script>
+    </body>
+</html>
