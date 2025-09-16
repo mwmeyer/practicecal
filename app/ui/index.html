@@ -3,62 +3,700 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>GraphQL Todo App</title>
+        <title>Trello-like Board App</title>
         <link
             rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
         />
         <script src="https://unpkg.com/alpinejs" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/@shopify/draggable@1.0.0-beta.12/lib/draggable.bundle.js"></script>
+        <style>
+            :root {
+                --board-bg: #0079bf;
+                --list-bg: #ebecf0;
+                --card-bg: #fff;
+                --card-shadow: 0 1px 0 rgba(9, 30, 66, 0.25);
+                --card-hover-shadow: 0 2px 6px rgba(9, 30, 66, 0.15);
+            }
+
+            body {
+                margin: 0;
+                background: var(--board-bg);
+                color: #172b4d;
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    sans-serif;
+            }
+
+            .navbar {
+                background: rgba(0, 0, 0, 0.15);
+                padding: 8px 16px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                backdrop-filter: blur(10px);
+            }
+
+            .navbar h1 {
+                color: white;
+                margin: 0;
+                font-size: 18px;
+                font-weight: 700;
+            }
+
+            .board-selector {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .board-selector select {
+                background: rgba(255, 255, 255, 0.2);
+                border: none;
+                color: white;
+                padding: 6px 12px;
+                border-radius: 3px;
+                font-size: 14px;
+            }
+
+            .board-selector select option {
+                background: #172b4d;
+                color: white;
+            }
+
+            .btn-primary {
+                background: rgba(255, 255, 255, 0.2);
+                border: none;
+                color: white;
+                padding: 6px 12px;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: background 0.2s;
+            }
+
+            .btn-primary:hover {
+                background: rgba(255, 255, 255, 0.3);
+            }
+
+            .board-container {
+                display: flex;
+                gap: 12px;
+                padding: 16px;
+                overflow-x: auto;
+                height: calc(100vh - 80px);
+                align-items: flex-start;
+            }
+
+            .list {
+                background: var(--list-bg);
+                border-radius: 3px;
+                width: 272px;
+                flex-shrink: 0;
+                max-height: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .list-header {
+                padding: 10px 12px 8px;
+                border-bottom: 1px solid #ddd;
+            }
+
+            .list-title {
+                font-weight: 600;
+                font-size: 14px;
+                margin: 0;
+                padding: 4px 8px;
+                background: transparent;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+            }
+
+            .list-title:hover {
+                background: rgba(0, 0, 0, 0.1);
+            }
+
+            .list-content {
+                padding: 8px;
+                flex: 1;
+                overflow-y: auto;
+            }
+
+            .cards-container {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .card {
+                background: var(--card-bg);
+                border-radius: 3px;
+                box-shadow: var(--card-shadow);
+                cursor: pointer;
+                transition: box-shadow 0.2s;
+                position: relative;
+            }
+
+            .card:hover {
+                box-shadow: var(--card-hover-shadow);
+            }
+
+            .card-content {
+                padding: 8px 12px;
+            }
+
+            .card-title {
+                font-weight: 400;
+                font-size: 14px;
+                margin: 0 0 4px 0;
+                line-height: 1.4;
+            }
+
+            .card-description {
+                font-size: 12px;
+                color: #5e6c84;
+                margin: 0 0 8px 0;
+                line-height: 1.3;
+            }
+
+            .card-meta {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 11px;
+                color: #5e6c84;
+            }
+
+            .card-due-date {
+                background: #fff3cd;
+                color: #856404;
+                padding: 2px 6px;
+                border-radius: 2px;
+            }
+
+            .card-due-date.overdue {
+                background: #f8d7da;
+                color: #721c24;
+            }
+
+            .card-actions {
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+
+            .card:hover .card-actions {
+                opacity: 1;
+            }
+
+            .card-delete {
+                background: none;
+                border: none;
+                color: #5e6c84;
+                cursor: pointer;
+                padding: 2px;
+                border-radius: 2px;
+            }
+
+            .card-delete:hover {
+                background: #ffebee;
+                color: #d32f2f;
+            }
+
+            .add-card-form {
+                margin-top: 8px;
+            }
+
+            .add-card-textarea {
+                width: 100%;
+                min-height: 60px;
+                padding: 8px 12px;
+                border: none;
+                border-radius: 3px;
+                resize: vertical;
+                font-size: 14px;
+                font-family: inherit;
+                box-shadow: inset 0 0 0 2px #0079bf;
+            }
+
+            .add-card-actions {
+                margin-top: 8px;
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+
+            .btn-add {
+                background: #0079bf;
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 14px;
+            }
+
+            .btn-add:hover {
+                background: #026aa7;
+            }
+
+            .btn-cancel {
+                background: none;
+                border: none;
+                color: #5e6c84;
+                cursor: pointer;
+                font-size: 24px;
+                padding: 0;
+            }
+
+            .add-card-trigger {
+                color: #5e6c84;
+                background: none;
+                border: none;
+                padding: 8px;
+                cursor: pointer;
+                font-size: 14px;
+                width: 100%;
+                text-align: left;
+                border-radius: 3px;
+            }
+
+            .add-card-trigger:hover {
+                background: rgba(0, 0, 0, 0.1);
+                color: #172b4d;
+            }
+
+            .add-list {
+                background: rgba(255, 255, 255, 0.24);
+                border-radius: 3px;
+                width: 272px;
+                flex-shrink: 0;
+                padding: 12px;
+            }
+
+            .add-list-trigger {
+                background: none;
+                border: none;
+                color: white;
+                cursor: pointer;
+                font-size: 14px;
+                width: 100%;
+                text-align: left;
+                padding: 8px;
+                border-radius: 3px;
+            }
+
+            .add-list-trigger:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+
+            .add-list-form input {
+                width: 100%;
+                padding: 8px 12px;
+                border: none;
+                border-radius: 3px;
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
+
+            .modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.64);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            }
+
+            .modal-content {
+                background: white;
+                border-radius: 8px;
+                padding: 24px;
+                width: 90%;
+                max-width: 500px;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+
+            .modal-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+
+            .modal-title {
+                font-size: 20px;
+                font-weight: 600;
+                margin: 0;
+            }
+
+            .modal-close {
+                background: none;
+                border: none;
+                font-size: 24px;
+                cursor: pointer;
+                color: #5e6c84;
+            }
+
+            .form-group {
+                margin-bottom: 16px;
+            }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 4px;
+                font-weight: 500;
+                font-size: 14px;
+            }
+
+            .form-group input,
+            .form-group textarea {
+                width: 100%;
+                padding: 8px 12px;
+                border: 2px solid #ddd;
+                border-radius: 3px;
+                font-size: 14px;
+                font-family: inherit;
+            }
+
+            .form-group input:focus,
+            .form-group textarea:focus {
+                outline: none;
+                border-color: #0079bf;
+            }
+
+            .form-actions {
+                display: flex;
+                gap: 12px;
+                justify-content: flex-end;
+            }
+
+            .loading {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 16px 24px;
+                border-radius: 4px;
+                z-index: 2000;
+            }
+
+            .draggable-mirror {
+                opacity: 0.8;
+                transform: rotate(5deg);
+            }
+
+            .card.dragging {
+                opacity: 0.5;
+                transform: rotate(2deg);
+                transition: transform 0.2s;
+            }
+
+            .cards-container.drag-over {
+                background: rgba(0, 121, 191, 0.1) !important;
+                border: 2px dashed #0079bf;
+                border-radius: 6px;
+                min-height: 60px;
+            }
+
+            .cards-container {
+                min-height: 40px;
+                transition: all 0.2s ease;
+            }
+
+            .drop-indicator {
+                height: 2px;
+                background: #0079bf;
+                margin: 4px 0;
+                border-radius: 1px;
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+
+            .drop-indicator.active {
+                opacity: 1;
+            }
+        </style>
     </head>
     <body>
-        <main class="container" x-data="todoApp()">
-            <h1>To-Do List 📝</h1>
+        <div x-data="boardApp()" x-init="init()">
+            <!-- Navigation -->
+            <nav class="navbar">
+                <h1>🗂️ Board App</h1>
+                <div class="board-selector">
+                    <select x-model="selectedBoardId" @change="loadBoard()">
+                        <option value="">Select a board...</option>
+                        <template x-for="board in boards" :key="board.id">
+                            <option
+                                :value="board.id"
+                                x-text="board.name"
+                            ></option>
+                        </template>
+                    </select>
+                    <button
+                        class="btn-primary"
+                        @click="showCreateBoardModal = true"
+                    >
+                        + Board
+                    </button>
+                </div>
+            </nav>
 
-            <form @submit.prevent="addTodo()">
-                <input
-                    type="text"
-                    x-model="newTask"
-                    placeholder="New to-do"
-                    required
-                    autocomplete="off"
-                />
-                <button type="submit" :disabled="loading">Add</button>
-            </form>
+            <!-- Board Container -->
+            <div
+                x-show="currentBoard"
+                class="board-container"
+                id="board-container"
+            >
+                <!-- Lists -->
+                <template
+                    x-for="list in currentBoard?.lists || []"
+                    :key="list.id"
+                >
+                    <div class="list" :data-list-id="list.id">
+                        <div class="list-header">
+                            <h3 class="list-title" x-text="list.name"></h3>
+                        </div>
+                        <div class="list-content">
+                            <div
+                                class="cards-container"
+                                :id="`list-${list.id}`"
+                            >
+                                <!-- Cards -->
+                                <template
+                                    x-for="card in list.cards"
+                                    :key="card.id"
+                                >
+                                    <div
+                                        class="card"
+                                        :data-card-id="card.id"
+                                        :data-list-id="list.id"
+                                    >
+                                        <div class="card-content">
+                                            <h4
+                                                class="card-title"
+                                                x-text="card.title"
+                                            ></h4>
+                                            <p
+                                                class="card-description"
+                                                x-show="card.description"
+                                                x-text="card.description"
+                                            ></p>
+                                            <div
+                                                class="card-meta"
+                                                x-show="card.dueDate"
+                                            >
+                                                <span
+                                                    class="card-due-date"
+                                                    :class="{ 'overdue': isOverdue(card.dueDate) }"
+                                                    x-text="formatDate(card.dueDate)"
+                                                ></span>
+                                                <div class="card-actions">
+                                                    <button
+                                                        class="card-delete"
+                                                        @click="deleteCard(card.id)"
+                                                        title="Delete card"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="card-meta"
+                                                x-show="!card.dueDate"
+                                            >
+                                                <span></span>
+                                                <div class="card-actions">
+                                                    <button
+                                                        class="card-delete"
+                                                        @click="deleteCard(card.id)"
+                                                        title="Delete card"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
 
-            <ul>
-                <template x-for="todo in todos" :key="todo.id">
-                    <li>
-                        <span x-text="todo.task"></span>
-                        <button
-                            @click="deleteTodo(todo.id)"
-                            title="Delete todo"
-                            :disabled="loading"
-                        >
-                            ❌
-                        </button>
-                    </li>
+                            <!-- Add Card Form -->
+                            <div x-show="addingCardToList === list.id">
+                                <div class="add-card-form">
+                                    <textarea
+                                        class="add-card-textarea"
+                                        x-model="newCard.title"
+                                        placeholder="Enter a title for this card..."
+                                        @keydown.enter.prevent="createCard(list.id)"
+                                        @keydown.escape="cancelAddCard()"
+                                    ></textarea>
+                                    <div class="add-card-actions">
+                                        <button
+                                            class="btn-add"
+                                            @click="createCard(list.id)"
+                                        >
+                                            Add Card
+                                        </button>
+                                        <button
+                                            class="btn-cancel"
+                                            @click="cancelAddCard()"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Add Card Trigger -->
+                            <button
+                                class="add-card-trigger"
+                                x-show="addingCardToList !== list.id"
+                                @click="startAddCard(list.id)"
+                            >
+                                + Add a card
+                            </button>
+                        </div>
+                    </div>
                 </template>
-            </ul>
 
-            <div x-show="loading" aria-busy="true">Loading...</div>
+                <!-- Add List -->
+                <div class="add-list">
+                    <div x-show="!addingList">
+                        <button
+                            class="add-list-trigger"
+                            @click="addingList = true"
+                        >
+                            + Add another list
+                        </button>
+                    </div>
+                    <div x-show="addingList">
+                        <div class="add-list-form">
+                            <input
+                                type="text"
+                                x-model="newList.name"
+                                placeholder="Enter list title..."
+                                @keydown.enter.prevent="createList()"
+                                @keydown.escape="cancelAddList()"
+                            />
+                            <div class="add-card-actions">
+                                <button class="btn-add" @click="createList()">
+                                    Add List
+                                </button>
+                                <button
+                                    class="btn-cancel"
+                                    @click="cancelAddList()"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Create Board Modal -->
+            <div
+                x-show="showCreateBoardModal"
+                class="modal"
+                @click.self="showCreateBoardModal = false"
+            >
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Create New Board</h2>
+                        <button
+                            class="modal-close"
+                            @click="showCreateBoardModal = false"
+                        >
+                            ×
+                        </button>
+                    </div>
+                    <form @submit.prevent="createBoard()">
+                        <div class="form-group">
+                            <label for="board-name">Board Name</label>
+                            <input
+                                type="text"
+                                id="board-name"
+                                x-model="newBoard.name"
+                                placeholder="Enter board name..."
+                                required
+                            />
+                        </div>
+                        <div class="form-actions">
+                            <button
+                                type="button"
+                                class="btn-cancel"
+                                @click="showCreateBoardModal = false"
+                            >
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn-add">
+                                Create Board
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div x-show="loading" class="loading">
+                <div>Loading...</div>
+            </div>
+
+            <!-- Error Display -->
             <div
                 x-show="error"
+                style="
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #f8d7da;
+                    color: #721c24;
+                    padding: 12px;
+                    border-radius: 4px;
+                    z-index: 1000;
+                "
                 x-text="error"
-                style="color: var(--pico-color-red-500)"
             ></div>
-        </main>
+        </div>
 
         <script>
-            function todoApp() {
+            function boardApp() {
                 return {
-                    todos: [],
-                    newTask: "",
+                    boards: [],
+                    currentBoard: null,
+                    selectedBoardId: "",
                     loading: false,
                     error: "",
 
-                    init() {
-                        this.loadTodos();
+                    // Modals and forms
+                    showCreateBoardModal: false,
+                    addingList: false,
+                    addingCardToList: null,
+
+                    // Form data
+                    newBoard: { name: "" },
+                    newList: { name: "" },
+                    newCard: { title: "", description: "", dueDate: "" },
+
+                    // Drag and drop
+                    draggable: null,
+
+                    async init() {
+                        await this.loadBoards();
+                        if (this.boards.length > 0) {
+                            this.selectedBoardId = this.boards[0].id.toString();
+                            await this.loadBoard();
+                        }
+                        this.initDragAndDrop();
                     },
 
                     async request(query, variables = {}) {
@@ -77,46 +715,434 @@
                         setTimeout(() => (this.error = ""), 5000);
                     },
 
-                    async loadTodos() {
+                    async loadBoards() {
                         this.loading = true;
                         try {
-                            const data = await this.request(
-                                `{ todos { id task } }`,
-                            );
-                            this.todos = data.todos;
+                            const data = await this.request(`
+                                query {
+                                    boards {
+                                        id
+                                        name
+                                    }
+                                }
+                            `);
+                            this.boards = data.boards;
                         } catch (e) {
                             this.showError(e.message);
                         }
                         this.loading = false;
                     },
 
-                    async addTodo() {
-                        if (!this.newTask.trim()) return;
+                    async loadBoard() {
+                        if (!this.selectedBoardId) {
+                            this.currentBoard = null;
+                            return;
+                        }
+
                         this.loading = true;
                         try {
                             const data = await this.request(
-                                `mutation($task: String!) { addTodo(task: $task) { id task } }`,
-                                { task: this.newTask.trim() },
+                                `
+                                query($id: Int!) {
+                                    board(id: $id) {
+                                        id
+                                        name
+                                        lists {
+                                            id
+                                            name
+                                            position
+                                            cards {
+                                                id
+                                                title
+                                                description
+                                                position
+                                                dueDate
+                                            }
+                                        }
+                                    }
+                                }
+                            `,
+                                { id: parseInt(this.selectedBoardId) },
                             );
-                            this.todos.push(data.addTodo);
-                            this.newTask = "";
+                            this.currentBoard = data.board;
+                            this.$nextTick(() => {
+                                this.setupDragAndDrop();
+                            });
                         } catch (e) {
                             this.showError(e.message);
                         }
                         this.loading = false;
                     },
 
-                    async deleteTodo(id) {
+                    async createBoard() {
+                        if (!this.newBoard.name.trim()) return;
+
+                        this.loading = true;
+                        try {
+                            const data = await this.request(
+                                `
+                                mutation($input: CreateBoardInput!) {
+                                    createBoard(input: $input) {
+                                        id
+                                        name
+                                    }
+                                }
+                            `,
+                                { input: { name: this.newBoard.name.trim() } },
+                            );
+
+                            this.boards.push(data.createBoard);
+                            this.selectedBoardId =
+                                data.createBoard.id.toString();
+                            this.newBoard.name = "";
+                            this.showCreateBoardModal = false;
+                            await this.loadBoard();
+                        } catch (e) {
+                            this.showError(e.message);
+                        }
+                        this.loading = false;
+                    },
+
+                    async createList() {
+                        if (!this.newList.name.trim() || !this.currentBoard)
+                            return;
+
+                        this.loading = true;
+                        try {
+                            const data = await this.request(
+                                `
+                                mutation($input: CreateListInput!) {
+                                    createList(input: $input) {
+                                        id
+                                        name
+                                        position
+                                        cards {
+                                            id
+                                            title
+                                            description
+                                            position
+                                            dueDate
+                                        }
+                                    }
+                                }
+                            `,
+                                {
+                                    input: {
+                                        name: this.newList.name.trim(),
+                                        boardId: this.currentBoard.id,
+                                    },
+                                },
+                            );
+
+                            this.currentBoard.lists.push(data.createList);
+                            this.newList.name = "";
+                            this.addingList = false;
+                            this.$nextTick(() => {
+                                this.setupDragAndDrop();
+                            });
+                        } catch (e) {
+                            this.showError(e.message);
+                        }
+                        this.loading = false;
+                    },
+
+                    startAddCard(listId) {
+                        this.addingCardToList = listId;
+                        this.newCard = {
+                            title: "",
+                            description: "",
+                            dueDate: "",
+                        };
+                        this.$nextTick(() => {
+                            const textarea =
+                                document.querySelector(".add-card-textarea");
+                            if (textarea) textarea.focus();
+                        });
+                    },
+
+                    cancelAddCard() {
+                        this.addingCardToList = null;
+                        this.newCard = {
+                            title: "",
+                            description: "",
+                            dueDate: "",
+                        };
+                    },
+
+                    cancelAddList() {
+                        this.addingList = false;
+                        this.newList.name = "";
+                    },
+
+                    async createCard(listId) {
+                        if (!this.newCard.title.trim()) return;
+
+                        this.loading = true;
+                        try {
+                            const data = await this.request(
+                                `
+                                mutation($input: CreateCardInput!) {
+                                    createCard(input: $input) {
+                                        id
+                                        title
+                                        description
+                                        position
+                                        dueDate
+                                    }
+                                }
+                            `,
+                                {
+                                    input: {
+                                        title: this.newCard.title.trim(),
+                                        description: this.newCard.description,
+                                        listId: listId,
+                                        dueDate: this.newCard.dueDate || null,
+                                    },
+                                },
+                            );
+
+                            const list = this.currentBoard.lists.find(
+                                (l) => l.id === listId,
+                            );
+                            if (list) {
+                                list.cards.push(data.createCard);
+                            }
+
+                            this.cancelAddCard();
+                            this.$nextTick(() => {
+                                this.setupDragAndDrop();
+                            });
+                        } catch (e) {
+                            this.showError(e.message);
+                        }
+                        this.loading = false;
+                    },
+
+                    async deleteCard(cardId) {
                         this.loading = true;
                         try {
                             await this.request(
-                                `mutation { deleteTodo(id: ${id}) }`,
+                                `
+                                mutation($id: Int!) {
+                                    deleteCard(id: $id)
+                                }
+                            `,
+                                { id: cardId },
                             );
-                            this.todos = this.todos.filter((t) => t.id !== id);
+
+                            // Remove card from current board
+                            this.currentBoard.lists.forEach((list) => {
+                                list.cards = list.cards.filter(
+                                    (card) => card.id !== cardId,
+                                );
+                            });
                         } catch (e) {
                             this.showError(e.message);
                         }
                         this.loading = false;
+                    },
+
+                    async moveCard(cardId, targetListId, position) {
+                        try {
+                            await this.request(
+                                `
+                                mutation($input: MoveCardInput!) {
+                                    moveCard(input: $input)
+                                }
+                            `,
+                                {
+                                    input: {
+                                        cardId: cardId,
+                                        targetListId: targetListId,
+                                        position: position,
+                                    },
+                                },
+                            );
+                        } catch (e) {
+                            this.showError(e.message);
+                            // Reload the board to sync state
+                            await this.loadBoard();
+                        }
+                    },
+
+                    initDragAndDrop() {
+                        // Re-initialize drag and drop after board loads
+                        this.$watch("currentBoard", () => {
+                            if (this.currentBoard) {
+                                this.$nextTick(() => {
+                                    this.setupDragAndDrop();
+                                });
+                            }
+                        });
+                    },
+
+                    setupDragAndDrop() {
+                        // Store reference to this for use in event handlers
+                        const self = this;
+
+                        // Setup drag and drop for cards
+                        const cards = document.querySelectorAll(".card");
+                        cards.forEach((card) => {
+                            if (!card.hasAttribute("draggable")) {
+                                card.draggable = true;
+
+                                card.addEventListener(
+                                    "dragstart",
+                                    function (e) {
+                                        this.classList.add("dragging");
+                                        e.dataTransfer.setData(
+                                            "text/plain",
+                                            this.dataset.cardId,
+                                        );
+                                        e.dataTransfer.effectAllowed = "move";
+
+                                        // Add visual feedback to all lists
+                                        document
+                                            .querySelectorAll(
+                                                ".cards-container",
+                                            )
+                                            .forEach((list) => {
+                                                if (
+                                                    list !==
+                                                    this.closest(
+                                                        ".cards-container",
+                                                    )
+                                                ) {
+                                                    list.style.background =
+                                                        "rgba(0, 121, 191, 0.05)";
+                                                    list.style.border =
+                                                        "1px dashed #ccc";
+                                                }
+                                            });
+                                    },
+                                );
+
+                                card.addEventListener("dragend", function (e) {
+                                    this.classList.remove("dragging");
+
+                                    // Remove visual feedback from all lists
+                                    document
+                                        .querySelectorAll(".cards-container")
+                                        .forEach((list) => {
+                                            list.classList.remove("drag-over");
+                                            list.style.background = "";
+                                            list.style.border = "";
+                                        });
+                                });
+                            }
+                        });
+
+                        // Setup drop zones for lists
+                        const lists =
+                            document.querySelectorAll(".cards-container");
+                        lists.forEach((list) => {
+                            if (!list.hasAttribute("data-drop-setup")) {
+                                list.setAttribute("data-drop-setup", "true");
+
+                                list.addEventListener(
+                                    "dragenter",
+                                    function (e) {
+                                        e.preventDefault();
+                                        this.classList.add("drag-over");
+                                    },
+                                );
+
+                                list.addEventListener("dragover", function (e) {
+                                    e.preventDefault();
+                                    e.dataTransfer.dropEffect = "move";
+                                });
+
+                                list.addEventListener(
+                                    "dragleave",
+                                    function (e) {
+                                        if (!this.contains(e.relatedTarget)) {
+                                            this.classList.remove("drag-over");
+                                        }
+                                    },
+                                );
+
+                                list.addEventListener(
+                                    "drop",
+                                    async function (e) {
+                                        e.preventDefault();
+                                        this.classList.remove("drag-over");
+
+                                        // Remove visual feedback from all lists
+                                        document
+                                            .querySelectorAll(
+                                                ".cards-container",
+                                            )
+                                            .forEach((l) => {
+                                                l.style.background = "";
+                                                l.style.border = "";
+                                            });
+
+                                        const cardId = parseInt(
+                                            e.dataTransfer.getData(
+                                                "text/plain",
+                                            ),
+                                        );
+                                        const targetListId = parseInt(
+                                            this.id.replace("list-", ""),
+                                        );
+
+                                        // Calculate position based on drop location
+                                        const rect =
+                                            this.getBoundingClientRect();
+                                        const y = e.clientY - rect.top;
+                                        const cards = Array.from(
+                                            this.querySelectorAll(".card"),
+                                        );
+                                        let position = cards.length;
+
+                                        // Find the insertion point
+                                        for (let i = 0; i < cards.length; i++) {
+                                            const cardRect =
+                                                cards[
+                                                    i
+                                                ].getBoundingClientRect();
+                                            const cardMiddle =
+                                                cardRect.top +
+                                                cardRect.height / 2 -
+                                                rect.top;
+                                            if (y < cardMiddle) {
+                                                position = i;
+                                                break;
+                                            }
+                                        }
+
+                                        try {
+                                            await self.moveCard(
+                                                cardId,
+                                                targetListId,
+                                                position,
+                                            );
+                                            await self.loadBoard();
+                                        } catch (error) {
+                                            self.showError(
+                                                "Failed to move card",
+                                            );
+                                        }
+                                    },
+                                );
+                            }
+                        });
+                    },
+
+                    formatDate(dateStr) {
+                        if (!dateStr) return "";
+                        const date = new Date(dateStr);
+                        return date.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                        });
+                    },
+
+                    isOverdue(dateStr) {
+                        if (!dateStr) return false;
+                        const today = new Date();
+                        const dueDate = new Date(dateStr);
+                        return dueDate < today;
                     },
                 };
             }
