@@ -8,205 +8,118 @@
             rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
         />
+        <script src="https://unpkg.com/alpinejs" defer></script>
     </head>
     <body>
-        <main class="container">
+        <main class="container" x-data="todoApp()">
             <h1>To-Do List 📝</h1>
 
-            <form id="todo-form">
+            <form @submit.prevent="addTodo()">
                 <input
                     type="text"
-                    id="task-input"
-                    name="task"
+                    x-model="newTask"
                     placeholder="New to-do"
                     required
                     autocomplete="off"
                 />
-                <button type="submit">Add</button>
+                <button type="submit" :disabled="loading">Add</button>
             </form>
 
-            <ul id="todo-list">
-                <!-- Todos will be loaded here -->
+            <ul>
+                <template x-for="todo in todos" :key="todo.id">
+                    <li>
+                        <span x-text="todo.task"></span>
+                        <button
+                            @click="deleteTodo(todo.id)"
+                            title="Delete todo"
+                            :disabled="loading"
+                        >
+                            ❌
+                        </button>
+                    </li>
+                </template>
             </ul>
 
-            <div id="loading" aria-busy="true" style="display: none">
-                Loading...
-            </div>
+            <div x-show="loading" aria-busy="true">Loading...</div>
+
             <div
-                id="error"
-                style="display: none; color: var(--pico-color-red-500)"
+                x-show="error"
+                x-text="error"
+                style="color: var(--pico-color-red-500)"
             ></div>
         </main>
 
         <script>
-            const API_URL = "/graphql";
+            function todoApp() {
+                return {
+                    todos: [],
+                    newTask: "",
+                    loading: false,
+                    error: "",
 
-            // GraphQL request helper
-            async function graphqlRequest(query, variables = {}) {
-                try {
-                    const response = await fetch(API_URL, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            query,
-                            variables,
-                        }),
-                    });
+                    init() {
+                        this.loadTodos();
+                    },
 
-                    const data = await response.json();
+                    async request(query, variables = {}) {
+                        const res = await fetch("/graphql", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ query, variables }),
+                        });
+                        const { data, errors } = await res.json();
+                        if (errors) throw new Error(errors[0].message);
+                        return data;
+                    },
 
-                    if (data.errors) {
-                        throw new Error(data.errors[0].message);
-                    }
+                    showError(msg) {
+                        this.error = `Error: ${msg}`;
+                        setTimeout(() => (this.error = ""), 5000);
+                    },
 
-                    return data.data;
-                } catch (error) {
-                    console.error("GraphQL Error:", error);
-                    showError(error.message);
-                    throw error;
-                }
-            }
-
-            // UI helper functions
-            function showLoading() {
-                document.getElementById("loading").style.display = "block";
-            }
-
-            function hideLoading() {
-                document.getElementById("loading").style.display = "none";
-            }
-
-            function showError(message) {
-                const errorElement = document.getElementById("error");
-                errorElement.textContent = `Error: ${message}`;
-                errorElement.style.display = "block";
-                setTimeout(() => {
-                    errorElement.style.display = "none";
-                }, 5000);
-            }
-
-            // Todo operations
-            async function loadTodos() {
-                showLoading();
-                try {
-                    const data = await graphqlRequest(`
-          query {
-            todos {
-              id
-              task
-            }
-          }
-        `);
-
-                    renderTodos(data.todos);
-                } catch (error) {
-                    console.error("Failed to load todos:", error);
-                } finally {
-                    hideLoading();
-                }
-            }
-
-            async function addTodo(task) {
-                try {
-                    const data = await graphqlRequest(
-                        `
-          mutation($task: String!) {
-            addTodo(task: $task) {
-              id
-              task
-            }
-          }
-        `,
-                        { task },
-                    );
-
-                    const newTodo = data.addTodo;
-                    appendTodoToList(newTodo);
-
-                    // Clear the input
-                    document.getElementById("task-input").value = "";
-                } catch (error) {
-                    console.error("Failed to add todo:", error);
-                }
-            }
-
-            async function deleteTodo(id) {
-                try {
-                    const data = await graphqlRequest(`
-          mutation {
-            deleteTodo(id: ${id})
-          }
-        `);
-
-                    if (data.deleteTodo) {
-                        // Remove from DOM
-                        const todoElement = document.querySelector(
-                            `[data-todo-id="${id}"]`,
-                        );
-                        if (todoElement) {
-                            todoElement.remove();
+                    async loadTodos() {
+                        this.loading = true;
+                        try {
+                            const data = await this.request(
+                                `{ todos { id task } }`,
+                            );
+                            this.todos = data.todos;
+                        } catch (e) {
+                            this.showError(e.message);
                         }
-                    }
-                } catch (error) {
-                    console.error("Failed to delete todo:", error);
-                }
+                        this.loading = false;
+                    },
+
+                    async addTodo() {
+                        if (!this.newTask.trim()) return;
+                        this.loading = true;
+                        try {
+                            const data = await this.request(
+                                `mutation($task: String!) { addTodo(task: $task) { id task } }`,
+                                { task: this.newTask.trim() },
+                            );
+                            this.todos.push(data.addTodo);
+                            this.newTask = "";
+                        } catch (e) {
+                            this.showError(e.message);
+                        }
+                        this.loading = false;
+                    },
+
+                    async deleteTodo(id) {
+                        this.loading = true;
+                        try {
+                            await this.request(
+                                `mutation { deleteTodo(id: ${id}) }`,
+                            );
+                            this.todos = this.todos.filter((t) => t.id !== id);
+                        } catch (e) {
+                            this.showError(e.message);
+                        }
+                        this.loading = false;
+                    },
+                };
             }
-
-            // Rendering functions
-            function renderTodos(todos) {
-                const todoList = document.getElementById("todo-list");
-                todoList.innerHTML = "";
-
-                todos.forEach((todo) => {
-                    appendTodoToList(todo);
-                });
-            }
-
-            function appendTodoToList(todo) {
-                const todoList = document.getElementById("todo-list");
-                const li = document.createElement("li");
-                li.setAttribute("data-todo-id", todo.id);
-                li.innerHTML = `
-        <span>${escapeHtml(todo.task)}</span>
-        <button
-          class="delete-btn"
-          onclick="deleteTodo(${todo.id})"
-          title="Delete todo"
-        >
-          ❌
-        </button>
-      `;
-
-                todoList.appendChild(li);
-            }
-
-            // Utility function to escape HTML
-            function escapeHtml(text) {
-                const div = document.createElement("div");
-                div.textContent = text;
-                return div.innerHTML;
-            }
-
-            // Event listeners
-            document
-                .getElementById("todo-form")
-                .addEventListener("submit", async (e) => {
-                    e.preventDefault();
-
-                    const taskInput = document.getElementById("task-input");
-                    const task = taskInput.value.trim();
-
-                    if (task) {
-                        await addTodo(task);
-                    }
-                });
-
-            // Load todos when page loads
-            document.addEventListener("DOMContentLoaded", () => {
-                loadTodos();
-            });
         </script>
     </body>
 </html>
