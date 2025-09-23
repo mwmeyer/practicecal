@@ -3,11 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PracticeProgress - Music Learning Tracker</title>
-        <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
-        />
+        <title>🗓️PracticeCal</title>
 
         <!-- React -->
         <script
@@ -18,226 +14,172 @@
             crossorigin
             src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
         ></script>
-
-        <!-- Babel for JSX transformation -->
         <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-        <!-- External CSS -->
-        <link rel="stylesheet" href="style.css" />
-
         <style>
-            /* Music Practice Calendar Styles */
-            .practice-calendar {
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    sans-serif;
+                color: #1d1d1f;
+                background: #fbfbfd;
+                line-height: 1.4;
+            }
+
+            .app {
                 max-width: 800px;
                 margin: 0 auto;
-                padding: 20px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 15px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-                color: white;
+                padding: 40px 20px;
             }
 
-            .calendar-header {
+            .header {
                 text-align: center;
-                margin-bottom: 20px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                flex-wrap: wrap;
-                gap: 10px;
+                margin-bottom: 60px;
             }
 
-            .week-navigation {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-
-            .nav-btn {
-                background: rgba(255, 255, 255, 0.2);
-                border: none;
-                color: white;
-                padding: 8px 12px;
-                border-radius: 5px;
-                cursor: pointer;
-                font-size: 16px;
-            }
-
-            .nav-btn:hover {
-                background: rgba(255, 255, 255, 0.3);
-            }
-
-            .instrument-section {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                flex-wrap: wrap;
-            }
-
-            .instrument-input {
-                padding: 8px 12px;
-                border-radius: 5px;
-                border: 1px solid rgba(255, 255, 255, 0.3);
-                background: rgba(255, 255, 255, 0.1);
-                color: white;
-                min-width: 150px;
-            }
-
-            .instrument-input::placeholder {
-                color: rgba(255, 255, 255, 0.7);
-            }
-
-            .week-grid {
-                background: white;
-                border-radius: 10px;
-                overflow: hidden;
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-                margin: 20px 0;
-            }
-
-            .week-header {
-                background: #4a5568;
-                color: white;
-                padding: 15px;
-                font-weight: bold;
-                text-align: center;
-                position: relative;
-            }
-
-            .music-note {
-                position: absolute;
-                font-size: 20px;
-                opacity: 0.7;
-            }
-
-            .music-note.left {
-                left: 20px;
-                top: 50%;
-                transform: translateY(-50%);
-            }
-
-            .music-note.right {
-                right: 20px;
-                top: 50%;
-                transform: translateY(-50%);
-            }
-
-            .days-header {
-                display: grid;
-                grid-template-columns: repeat(7, 1fr) auto;
-                background: #e2e8f0;
-                color: #2d3748;
-            }
-
-            .day-header {
-                padding: 10px;
-                text-align: center;
+            .title {
+                font-size: 32px;
                 font-weight: 600;
-                border-right: 1px solid #cbd5e0;
+                letter-spacing: -0.02em;
+                margin-bottom: 8px;
             }
 
-            .total-header {
-                padding: 10px;
-                text-align: center;
-                font-weight: 600;
-                background: #4299e1;
-                color: white;
-                min-width: 100px;
-            }
-
-            .days-row {
-                display: grid;
-                grid-template-columns: repeat(7, 1fr) auto;
-                min-height: 120px;
-            }
-
-            .day-cell {
-                border-right: 1px solid #e2e8f0;
-                border-bottom: 1px solid #e2e8f0;
-                padding: 10px;
-                background: white;
-                color: #2d3748;
-                position: relative;
-                cursor: pointer;
-                transition: background-color 0.2s;
-            }
-
-            .day-cell:hover {
-                background: #f7fafc;
-            }
-
-            .day-cell.has-practice {
-                background: #c6f6d5;
-            }
-
-            .day-cell.today {
-                background: #fed7d7;
-            }
-
-            .day-number {
-                font-size: 12px;
-                color: #718096;
-                margin-bottom: 5px;
-            }
-
-            .practice-time {
-                font-weight: bold;
-                color: #2b6cb0;
-                margin-bottom: 5px;
-            }
-
-            .practice-sessions {
-                font-size: 11px;
-                color: #4a5568;
-                max-height: 60px;
-                overflow-y: auto;
-            }
-
-            .session-item {
-                margin-bottom: 2px;
-                padding: 2px 4px;
-                background: rgba(66, 153, 225, 0.1);
-                border-radius: 3px;
-                cursor: pointer;
-            }
-
-            .session-item:hover {
-                background: rgba(66, 153, 225, 0.2);
-            }
-
-            .total-cell {
-                border-bottom: 1px solid #e2e8f0;
-                padding: 10px;
-                background: #4299e1;
-                color: white;
+            .week-nav {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-weight: bold;
-                min-width: 100px;
+                gap: 24px;
+                margin-bottom: 40px;
             }
 
-            .notes-section {
-                background: white;
-                border-radius: 10px;
-                padding: 20px;
-                margin: 20px 0;
-                color: #2d3748;
+            .week-title {
+                font-size: 17px;
+                font-weight: 500;
+                color: #6e6e73;
+                min-width: 200px;
             }
 
-            .notes-header {
+            .nav-button {
+                background: none;
+                border: none;
+                font-size: 24px;
+                color: #0066cc;
+                cursor: pointer;
+                padding: 8px;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
                 display: flex;
                 align-items: center;
-                margin-bottom: 10px;
-                font-weight: bold;
+                justify-content: center;
+                transition: all 0.2s ease;
             }
 
-            .notes-content {
+            .nav-button:hover {
+                background: #f2f2f7;
+            }
+
+            .total-practice {
+                text-align: center;
+                padding: 40px 20px;
+                margin-top: 40px;
+                border-top: 1px solid #d2d2d7;
+            }
+
+            .total-label {
+                font-size: 14px;
+                color: #6e6e73;
+                margin-bottom: 8px;
+                font-weight: 500;
+            }
+
+            .total-time {
+                font-size: 48px;
+                font-weight: 200;
+                color: #1d1d1f;
+                letter-spacing: -0.02em;
+                margin-bottom: 4px;
+            }
+
+            .total-subtitle {
+                font-size: 16px;
+                color: #6e6e73;
+            }
+
+            .calendar {
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                gap: 1px;
+                background: #d2d2d7;
+                border-radius: 12px;
+                overflow: hidden;
+                margin-bottom: 40px;
+            }
+
+            .day-header {
+                background: white;
+                padding: 16px 8px;
+                text-align: center;
+                font-size: 14px;
+                font-weight: 500;
+                color: #6e6e73;
+            }
+
+            .day-cell {
+                background: white;
                 min-height: 100px;
-                background: #f7fafc;
-                border-radius: 5px;
-                padding: 10px;
-                border: 1px solid #e2e8f0;
+                padding: 12px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                position: relative;
+            }
+
+            .day-cell:hover {
+                background: #f2f2f7;
+            }
+
+            .day-cell.has-practice {
+                background: #e8f4fd;
+            }
+
+            .day-cell.today {
+                background: #fff3cd;
+            }
+
+            .day-date {
+                font-size: 14px;
+                color: #6e6e73;
+                margin-bottom: 8px;
+            }
+
+            .day-total {
+                font-size: 16px;
+                font-weight: 600;
+                color: #0066cc;
+                margin-bottom: 8px;
+            }
+
+            .session {
+                font-size: 12px;
+                color: #6e6e73;
+                margin-bottom: 4px;
+                padding: 4px 6px;
+                background: rgba(0, 102, 204, 0.1);
+                border-radius: 4px;
+            }
+
+            .week-total {
+                text-align: center;
+                font-size: 24px;
+                font-weight: 600;
+                color: #0066cc;
+                margin-bottom: 40px;
             }
 
             .modal {
@@ -246,7 +188,7 @@
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
+                background: rgba(0, 0, 0, 0.3);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -255,97 +197,110 @@
 
             .modal-content {
                 background: white;
-                padding: 30px;
-                border-radius: 10px;
-                max-width: 400px;
+                border-radius: 12px;
+                padding: 32px;
                 width: 90%;
-                max-height: 90vh;
-                overflow-y: auto;
+                max-width: 400px;
             }
 
-            .modal-header {
-                margin-bottom: 20px;
-                padding-bottom: 10px;
-                border-bottom: 1px solid #e2e8f0;
+            .modal-title {
+                font-size: 20px;
+                font-weight: 600;
+                margin-bottom: 24px;
+                text-align: center;
             }
 
             .form-group {
-                margin-bottom: 15px;
+                margin-bottom: 20px;
             }
 
             .form-label {
+                font-size: 14px;
+                font-weight: 500;
+                color: #6e6e73;
+                margin-bottom: 8px;
                 display: block;
-                margin-bottom: 5px;
-                font-weight: 600;
-                color: #2d3748;
             }
 
             .form-input {
                 width: 100%;
-                padding: 8px 12px;
-                border: 1px solid #e2e8f0;
-                border-radius: 5px;
-                font-size: 14px;
+                border: 1px solid #d2d2d7;
+                border-radius: 8px;
+                padding: 12px 16px;
+                font-size: 16px;
+                background: white;
+            }
+
+            .form-input:focus {
+                outline: none;
+                border-color: #0066cc;
             }
 
             .form-textarea {
                 width: 100%;
-                padding: 8px 12px;
-                border: 1px solid #e2e8f0;
-                border-radius: 5px;
-                font-size: 14px;
+                border: 1px solid #d2d2d7;
+                border-radius: 8px;
+                padding: 12px 16px;
+                font-size: 16px;
+                background: white;
                 min-height: 80px;
                 resize: vertical;
             }
 
+            .form-textarea:focus {
+                outline: none;
+                border-color: #0066cc;
+            }
+
             .modal-actions {
                 display: flex;
-                gap: 10px;
-                justify-content: flex-end;
-                margin-top: 20px;
-                padding-top: 15px;
-                border-top: 1px solid #e2e8f0;
+                gap: 12px;
+                justify-content: center;
+                margin-top: 32px;
             }
 
-            .btn {
-                padding: 8px 16px;
-                border-radius: 5px;
+            .button {
                 border: none;
+                border-radius: 8px;
+                padding: 12px 24px;
+                font-size: 16px;
+                font-weight: 500;
                 cursor: pointer;
-                font-weight: 600;
+                transition: all 0.2s ease;
             }
 
-            .btn-primary {
-                background: #4299e1;
+            .button-primary {
+                background: #0066cc;
                 color: white;
             }
 
-            .btn-secondary {
-                background: #e2e8f0;
-                color: #2d3748;
+            .button-primary:hover {
+                background: #0056b3;
             }
 
-            .btn-danger {
-                background: #f56565;
+            .button-secondary {
+                background: #f2f2f7;
+                color: #1d1d1f;
+            }
+
+            .button-secondary:hover {
+                background: #e5e5ea;
+            }
+
+            .button-danger {
+                background: #ff3b30;
                 color: white;
             }
 
-            .btn:hover {
-                opacity: 0.9;
+            .button-danger:hover {
+                background: #d70015;
             }
 
             .loading {
                 text-align: center;
-                padding: 40px;
-                color: white;
-            }
-
-            .error-message {
-                background: #fed7d7;
-                color: #c53030;
-                padding: 10px;
-                border-radius: 5px;
-                margin: 10px 0;
+                padding: 80px 20px;
+                color: #6e6e73;
+                font-size: 18px;
             }
         </style>
     </head>
@@ -353,9 +308,9 @@
         <div id="root"></div>
 
         <script type="text/babel">
-            const { useState, useEffect, useRef } = React;
+            const { useState, useEffect } = React;
 
-            // Create a simple GraphQL client instead of Apollo for CDN compatibility
+            // GraphQL client
             const gql = (strings, ...values) => {
                 let result = strings[0];
                 for (let i = 1; i < strings.length; i++) {
@@ -403,7 +358,6 @@
 
             const useMutation = (mutation) => {
                 const [loading, setLoading] = useState(false);
-                const [error, setError] = useState(null);
 
                 const executeMutation = async (options = {}) => {
                     setLoading(true);
@@ -420,20 +374,18 @@
                         if (result.errors) {
                             throw new Error(result.errors[0].message);
                         }
-                        setError(null);
                         return result;
                     } catch (err) {
-                        setError(err);
                         throw err;
                     } finally {
                         setLoading(false);
                     }
                 };
 
-                return [executeMutation, { loading, error }];
+                return [executeMutation, { loading }];
             };
 
-            // GraphQL queries and mutations
+            // GraphQL queries
             const GET_CURRENT_WEEK = gql`
                 query {
                     currentWeekStart
@@ -441,11 +393,8 @@
             `;
 
             const GET_PRACTICE_SESSIONS_BY_DAY = gql`
-                query ($weekStart: String!, $instrument: String) {
-                    practiceSessionsByDay(
-                        weekStart: $weekStart
-                        instrument: $instrument
-                    ) {
+                query ($weekStart: String!) {
+                    practiceSessionsByDay(weekStart: $weekStart) {
                         date
                         dayName
                         totalMinutes
@@ -460,28 +409,10 @@
             `;
 
             const GET_WEEKLY_PRACTICE = gql`
-                query ($weekStart: String!, $instrument: String) {
-                    practiceSessionsForWeek(
-                        weekStart: $weekStart
-                        instrument: $instrument
-                    ) {
-                        weekStart
-                        instrument
+                query ($weekStart: String!) {
+                    practiceSessionsForWeek(weekStart: $weekStart) {
                         totalMinutes
-                        sessions {
-                            id
-                            instrument
-                            date
-                            durationMinutes
-                            notes
-                        }
                     }
-                }
-            `;
-
-            const GET_AVAILABLE_INSTRUMENTS = gql`
-                query {
-                    availableInstruments
                 }
             `;
 
@@ -489,10 +420,6 @@
                 mutation ($input: CreatePracticeSessionInput!) {
                     createPracticeSession(input: $input) {
                         id
-                        instrument
-                        date
-                        durationMinutes
-                        notes
                     }
                 }
             `;
@@ -501,10 +428,6 @@
                 mutation ($input: UpdatePracticeSessionInput!) {
                     updatePracticeSession(input: $input) {
                         id
-                        instrument
-                        date
-                        durationMinutes
-                        notes
                     }
                 }
             `;
@@ -515,13 +438,10 @@
                 }
             `;
 
-            // Utility functions
+            // Utilities
             const formatDate = (dateStr) => {
                 const date = new Date(dateStr);
-                return date.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                });
+                return date.getDate();
             };
 
             const formatWeekRange = (weekStart) => {
@@ -529,19 +449,12 @@
                 const end = new Date(start);
                 end.setDate(start.getDate() + 6);
 
-                return `${start.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                })} - ${end.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                })}`;
+                const options = { month: "short", day: "numeric" };
+                return `${start.toLocaleDateString("en-US", options)} – ${end.toLocaleDateString("en-US", options)}`;
             };
 
             const isToday = (dateStr) => {
-                const today = new Date().toISOString().split("T")[0];
-                return dateStr === today;
+                return dateStr === new Date().toISOString().split("T")[0];
             };
 
             const addWeeks = (dateStr, weeks) => {
@@ -557,69 +470,48 @@
                 return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
             };
 
-            // Practice Session Modal Component
-            function PracticeSessionModal({
-                isOpen,
-                onClose,
-                date,
-                session,
-                onSave,
-                onDelete,
-                currentInstrument,
-            }) {
-                const [instrument, setInstrument] = useState(
-                    currentInstrument || "",
-                );
+            // Modal Component
+            function Modal({ isOpen, onClose, date, session, onSave }) {
+                const [instrumentValue, setInstrumentValue] = useState("");
                 const [duration, setDuration] = useState("");
                 const [notes, setNotes] = useState("");
 
-                const [createSession, { loading: creating }] = useMutation(
-                    CREATE_PRACTICE_SESSION,
-                );
-                const [updateSession, { loading: updating }] = useMutation(
-                    UPDATE_PRACTICE_SESSION,
-                );
-                const [deleteSession, { loading: deleting }] = useMutation(
-                    DELETE_PRACTICE_SESSION,
-                );
+                const [createSession] = useMutation(CREATE_PRACTICE_SESSION);
+                const [updateSession] = useMutation(UPDATE_PRACTICE_SESSION);
+                const [deleteSession] = useMutation(DELETE_PRACTICE_SESSION);
 
                 useEffect(() => {
                     if (session) {
-                        setInstrument(session.instrument);
+                        setInstrumentValue(session.instrument);
                         setDuration(session.durationMinutes.toString());
                         setNotes(session.notes || "");
                     } else {
-                        setInstrument(currentInstrument || "");
+                        setInstrumentValue("");
                         setDuration("");
                         setNotes("");
                     }
-                }, [session, currentInstrument, isOpen]);
+                }, [session, isOpen]);
 
                 const handleSave = async () => {
-                    if (!instrument || !duration || parseInt(duration) <= 0) {
-                        alert("Please fill in instrument and practice time");
-                        return;
-                    }
+                    if (!instrumentValue || !duration) return;
 
                     try {
                         if (session) {
-                            // Update existing session
                             await updateSession({
                                 variables: {
                                     input: {
                                         id: session.id,
-                                        instrument,
+                                        instrument: instrumentValue,
                                         durationMinutes: parseInt(duration),
                                         notes: notes || null,
                                     },
                                 },
                             });
                         } else {
-                            // Create new session
                             await createSession({
                                 variables: {
                                     input: {
-                                        instrument,
+                                        instrument: instrumentValue,
                                         date,
                                         durationMinutes: parseInt(duration),
                                         notes: notes || null,
@@ -630,32 +522,18 @@
                         onSave();
                         onClose();
                     } catch (error) {
-                        alert(
-                            "Error saving practice session: " + error.message,
-                        );
+                        console.error(error);
                     }
                 };
 
                 const handleDelete = async () => {
                     if (!session) return;
-
-                    if (
-                        confirm(
-                            "Are you sure you want to delete this practice session?",
-                        )
-                    ) {
-                        try {
-                            await deleteSession({
-                                variables: { id: session.id },
-                            });
-                            onDelete();
-                            onClose();
-                        } catch (error) {
-                            alert(
-                                "Error deleting practice session: " +
-                                    error.message,
-                            );
-                        }
+                    try {
+                        await deleteSession({ variables: { id: session.id } });
+                        onSave();
+                        onClose();
+                    } catch (error) {
+                        console.error(error);
                     }
                 };
 
@@ -664,32 +542,25 @@
                 return (
                     <div className="modal">
                         <div className="modal-content">
-                            <div className="modal-header">
-                                <h3>
-                                    {session
-                                        ? "Edit Practice Session"
-                                        : "Add Practice Session"}
-                                </h3>
-                                <p>{formatDate(date)}</p>
-                            </div>
+                            <h3 className="modal-title">
+                                {session ? "Edit Practice" : "Add Practice"}
+                            </h3>
 
                             <div className="form-group">
                                 <label className="form-label">Instrument</label>
                                 <input
                                     type="text"
                                     className="form-input"
-                                    value={instrument}
+                                    value={instrumentValue}
                                     onChange={(e) =>
-                                        setInstrument(e.target.value)
+                                        setInstrumentValue(e.target.value)
                                     }
-                                    placeholder="Guitar, Piano, Violin..."
+                                    placeholder="Piano, Guitar, Violin..."
                                 />
                             </div>
 
                             <div className="form-group">
-                                <label className="form-label">
-                                    Practice Time (minutes)
-                                </label>
+                                <label className="form-label">Minutes</label>
                                 <input
                                     type="number"
                                     className="form-input"
@@ -698,46 +569,39 @@
                                         setDuration(e.target.value)
                                     }
                                     placeholder="30"
-                                    min="1"
                                 />
                             </div>
 
                             <div className="form-group">
-                                <label className="form-label">
-                                    Notes (optional)
-                                </label>
+                                <label className="form-label">Notes</label>
                                 <textarea
                                     className="form-textarea"
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="What did you practice? Any observations?"
+                                    placeholder="What did you practice?"
                                 />
                             </div>
 
                             <div className="modal-actions">
-                                {session && (
-                                    <button
-                                        className="btn btn-danger"
-                                        onClick={handleDelete}
-                                        disabled={deleting}
-                                    >
-                                        {deleting ? "Deleting..." : "Delete"}
-                                    </button>
-                                )}
                                 <button
-                                    className="btn btn-secondary"
+                                    className="button button-secondary"
                                     onClick={onClose}
                                 >
                                     Cancel
                                 </button>
+                                {session && (
+                                    <button
+                                        className="button button-danger"
+                                        onClick={handleDelete}
+                                    >
+                                        Delete
+                                    </button>
+                                )}
                                 <button
-                                    className="btn btn-primary"
+                                    className="button button-primary"
                                     onClick={handleSave}
-                                    disabled={creating || updating}
                                 >
-                                    {creating || updating
-                                        ? "Saving..."
-                                        : "Save"}
+                                    Save
                                 </button>
                             </div>
                         </div>
@@ -745,59 +609,37 @@
                 );
             }
 
-            // Main Practice Calendar Component
-            function PracticeCalendar() {
-                const [currentWeekStart, setCurrentWeekStart] = useState("");
-                const [selectedInstrument, setSelectedInstrument] =
-                    useState("");
+            // Main App
+            function App() {
+                const [currentWeek, setCurrentWeek] = useState("");
                 const [modalOpen, setModalOpen] = useState(false);
                 const [modalDate, setModalDate] = useState("");
                 const [modalSession, setModalSession] = useState(null);
 
-                // Get current week
-                const { data: currentWeekData, loading: weekLoading } =
+                const { data: weekData, loading: weekLoading } =
                     useQuery(GET_CURRENT_WEEK);
 
-                // Set initial week when data loads
                 useEffect(() => {
-                    if (
-                        currentWeekData?.data?.currentWeekStart &&
-                        !currentWeekStart
-                    ) {
-                        setCurrentWeekStart(
-                            currentWeekData.data.currentWeekStart,
-                        );
+                    if (weekData?.data?.currentWeekStart && !currentWeek) {
+                        setCurrentWeek(weekData.data.currentWeekStart);
                     }
-                }, [currentWeekData, currentWeekStart]);
+                }, [weekData, currentWeek]);
 
-                // Get practice sessions for current week
                 const {
                     data: practiceData,
                     loading: practiceLoading,
-                    refetch: refetchPractice,
+                    refetch,
                 } = useQuery(GET_PRACTICE_SESSIONS_BY_DAY, {
-                    variables: {
-                        weekStart: currentWeekStart,
-                        instrument: selectedInstrument || null,
-                    },
-                    skip: !currentWeekStart,
+                    variables: { weekStart: currentWeek },
+                    skip: !currentWeek,
                 });
 
-                // Get weekly totals
                 const { data: weeklyData, refetch: refetchWeekly } = useQuery(
                     GET_WEEKLY_PRACTICE,
                     {
-                        variables: {
-                            weekStart: currentWeekStart,
-                            instrument: selectedInstrument || null,
-                        },
-                        skip: !currentWeekStart,
+                        variables: { weekStart: currentWeek },
+                        skip: !currentWeek,
                     },
-                );
-
-                // Get available instruments
-                const { data: instrumentsData } = useQuery(
-                    GET_AVAILABLE_INSTRUMENTS,
                 );
 
                 const practiceByDay =
@@ -805,10 +647,8 @@
                 const weeklyTotal =
                     weeklyData?.data?.practiceSessionsForWeek?.totalMinutes ||
                     0;
-                const availableInstruments =
-                    instrumentsData?.data?.availableInstruments || [];
 
-                const handleDayClick = (date, sessions) => {
+                const handleDayClick = (date) => {
                     setModalDate(date);
                     setModalSession(null);
                     setModalOpen(true);
@@ -821,202 +661,115 @@
                     setModalOpen(true);
                 };
 
-                const handleModalSave = () => {
-                    refetchPractice();
+                const handleSave = () => {
+                    refetch();
                     refetchWeekly();
                 };
 
-                const navigateWeek = (direction) => {
-                    setCurrentWeekStart(addWeeks(currentWeekStart, direction));
-                };
-
-                const loading = weekLoading || practiceLoading;
-
-                if (loading) {
-                    return (
-                        <div className="loading">
-                            Loading your practice calendar...
-                        </div>
-                    );
+                if (weekLoading || practiceLoading) {
+                    return <div className="loading">Loading...</div>;
                 }
 
                 return (
-                    <div className="practice-calendar">
-                        <div className="calendar-header">
-                            <div className="week-navigation">
-                                <button
-                                    className="nav-btn"
-                                    onClick={() => navigateWeek(-1)}
-                                >
-                                    ‹
-                                </button>
-                                <h2>
-                                    Week of {formatWeekRange(currentWeekStart)}
-                                </h2>
-                                <button
-                                    className="nav-btn"
-                                    onClick={() => navigateWeek(1)}
-                                >
-                                    ›
-                                </button>
-                            </div>
+                    <div className="app">
+                        <header className="header">
+                            <h1 className="title">Practice Music Everyday</h1>
+                        </header>
 
-                            <div className="instrument-section">
-                                <label>Instrument:</label>
-                                <input
-                                    type="text"
-                                    className="instrument-input"
-                                    value={selectedInstrument}
-                                    onChange={(e) =>
-                                        setSelectedInstrument(e.target.value)
-                                    }
-                                    placeholder="All instruments"
-                                    list="instruments"
-                                />
-                                <datalist id="instruments">
-                                    {availableInstruments.map((inst) => (
-                                        <option key={inst} value={inst} />
-                                    ))}
-                                </datalist>
+                        <div className="week-nav">
+                            <button
+                                className="nav-button"
+                                onClick={() =>
+                                    setCurrentWeek(addWeeks(currentWeek, -1))
+                                }
+                            >
+                                ‹
+                            </button>
+                            <div className="week-title">
+                                {formatWeekRange(currentWeek)}
                             </div>
+                            <button
+                                className="nav-button"
+                                onClick={() =>
+                                    setCurrentWeek(addWeeks(currentWeek, 1))
+                                }
+                            >
+                                ›
+                            </button>
                         </div>
 
-                        <div className="week-grid">
-                            <div className="week-header">
-                                <span className="music-note left">🎵</span>
-                                <span>
-                                    Week of {formatWeekRange(currentWeekStart)}
-                                </span>
-                                <span className="music-note right">🎶</span>
-                            </div>
+                        <div className="calendar">
+                            <div className="day-header">Sun</div>
+                            <div className="day-header">Mon</div>
+                            <div className="day-header">Tue</div>
+                            <div className="day-header">Wed</div>
+                            <div className="day-header">Thu</div>
+                            <div className="day-header">Fri</div>
+                            <div className="day-header">Sat</div>
 
-                            <div className="days-header">
-                                <div className="day-header">Sunday</div>
-                                <div className="day-header">Monday</div>
-                                <div className="day-header">Tuesday</div>
-                                <div className="day-header">Wednesday</div>
-                                <div className="day-header">Thursday</div>
-                                <div className="day-header">Friday</div>
-                                <div className="day-header">Saturday</div>
-                                <div className="total-header">
-                                    Total Practice Time
-                                </div>
-                            </div>
-
-                            <div className="days-row">
-                                {practiceByDay.map((day) => (
-                                    <div
-                                        key={day.date}
-                                        className={`day-cell ${day.totalMinutes > 0 ? "has-practice" : ""} ${isToday(day.date) ? "today" : ""}`}
-                                        onClick={() =>
-                                            handleDayClick(
-                                                day.date,
-                                                day.sessions,
-                                            )
-                                        }
-                                    >
-                                        <div className="day-number">
-                                            {formatDate(day.date)}
-                                        </div>
-                                        {day.totalMinutes > 0 && (
-                                            <div className="practice-time">
-                                                {formatMinutes(
-                                                    day.totalMinutes,
-                                                )}
-                                            </div>
-                                        )}
-                                        <div className="practice-sessions">
-                                            {day.sessions.map((session) => (
-                                                <div
-                                                    key={session.id}
-                                                    className="session-item"
-                                                    onClick={(e) =>
-                                                        handleSessionClick(
-                                                            session,
-                                                            day.date,
-                                                            e,
-                                                        )
-                                                    }
-                                                    title={session.notes || ""}
-                                                >
-                                                    {session.instrument} •{" "}
-                                                    {session.durationMinutes}m
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                                <div className="total-cell">
-                                    {formatMinutes(weeklyTotal)}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="notes-section">
-                            <div className="notes-header">
-                                <span>📝 Notes:</span>
-                            </div>
-                            <div className="notes-content">
-                                Click on any day to add a practice session.
-                                Click on existing sessions to edit them.
-                                <br />
-                                <br />
-                                {weeklyTotal > 0 && (
-                                    <>
-                                        Great job this week! You've practiced
-                                        for {formatMinutes(weeklyTotal)} total.
-                                        {selectedInstrument && (
-                                            <>
-                                                {" "}
-                                                Your {selectedInstrument}{" "}
-                                                practice time is looking good!
-                                            </>
-                                        )}
-                                    </>
-                                )}
+                            {practiceByDay.map((day) => (
                                 <div
-                                    style={{
-                                        textAlign: "right",
-                                        marginTop: "10px",
-                                    }}
+                                    key={day.date}
+                                    className={`day-cell ${
+                                        day.totalMinutes > 0
+                                            ? "has-practice"
+                                            : ""
+                                    } ${isToday(day.date) ? "today" : ""}`}
+                                    onClick={() => handleDayClick(day.date)}
                                 >
-                                    🎼 🎵 🎶 🎹
+                                    <div className="day-date">
+                                        {formatDate(day.date)}
+                                    </div>
+                                    {day.totalMinutes > 0 && (
+                                        <div className="day-total">
+                                            {formatMinutes(day.totalMinutes)}
+                                        </div>
+                                    )}
+                                    {day.sessions.map((session) => (
+                                        <div
+                                            key={session.id}
+                                            className="session"
+                                            onClick={(e) =>
+                                                handleSessionClick(
+                                                    session,
+                                                    day.date,
+                                                    e,
+                                                )
+                                            }
+                                        >
+                                            {session.instrument}
+                                        </div>
+                                    ))}
                                 </div>
-                            </div>
+                            ))}
                         </div>
 
-                        <PracticeSessionModal
+                        <div className="total-practice">
+                            <div className="total-label">
+                                Total Practice Time
+                            </div>
+                            <div className="total-time">
+                                {weeklyTotal > 0
+                                    ? formatMinutes(weeklyTotal)
+                                    : "0m"}
+                            </div>
+                            <div className="total-subtitle">This week</div>
+                        </div>
+
+                        <Modal
                             isOpen={modalOpen}
                             onClose={() => setModalOpen(false)}
                             date={modalDate}
                             session={modalSession}
-                            onSave={handleModalSave}
-                            onDelete={handleModalSave}
-                            currentInstrument={selectedInstrument}
+                            onSave={handleSave}
                         />
                     </div>
                 );
             }
 
-            // Root App component
-            function App() {
-                return (
-                    <div
-                        style={{
-                            minHeight: "100vh",
-                            background:
-                                "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                            padding: "20px",
-                        }}
-                    >
-                        <PracticeCalendar />
-                    </div>
-                );
-            }
-
-            // Render the app
-            const root = ReactDOM.createRoot(document.getElementById("root"));
-            root.render(<App />);
+            ReactDOM.createRoot(document.getElementById("root")).render(
+                <App />,
+            );
         </script>
     </body>
 </html>
