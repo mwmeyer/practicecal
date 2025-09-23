@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Trello-like Board App</title>
+        <title>PracticeProgress - Music Learning Tracker</title>
         <link
             rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
@@ -22,401 +22,8 @@
         <!-- Babel for JSX transformation -->
         <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-        <style>
-            :root {
-                --board-bg: #0079bf;
-                --list-bg: #ebecf0;
-                --card-bg: #fff;
-                --card-shadow: 0 1px 0 rgba(9, 30, 66, 0.25);
-                --card-hover-shadow: 0 2px 6px rgba(9, 30, 66, 0.15);
-            }
-
-            body {
-                margin: 0;
-                background: var(--board-bg);
-                color: #172b4d;
-                font-family:
-                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                    sans-serif;
-            }
-
-            .navbar {
-                background: rgba(0, 0, 0, 0.15);
-                padding: 8px 16px;
-                display: flex;
-                align-items: center;
-                gap: 16px;
-                backdrop-filter: blur(10px);
-            }
-
-            .navbar h1 {
-                color: white;
-                margin: 0;
-                font-size: 18px;
-                font-weight: 700;
-            }
-
-            .btn-primary {
-                background: rgba(255, 255, 255, 0.2);
-                border: none;
-                color: white;
-                padding: 6px 12px;
-                border-radius: 3px;
-                cursor: pointer;
-                font-size: 14px;
-                transition: background 0.2s;
-            }
-
-            .btn-primary:hover {
-                background: rgba(255, 255, 255, 0.3);
-            }
-
-            .board-container {
-                display: flex;
-                gap: 12px;
-                padding: 16px;
-                overflow-x: auto;
-                height: calc(100vh - 80px);
-                align-items: flex-start;
-            }
-
-            .list {
-                background: var(--list-bg);
-                border-radius: 3px;
-                width: 272px;
-                flex-shrink: 0;
-                max-height: 100%;
-                display: flex;
-                flex-direction: column;
-            }
-
-            .list-header {
-                padding: 10px 12px 8px;
-                border-bottom: 1px solid #ddd;
-            }
-
-            .list-title {
-                font-weight: 600;
-                font-size: 14px;
-                margin: 0;
-                padding: 4px 8px;
-                background: transparent;
-                border: none;
-                border-radius: 3px;
-                cursor: pointer;
-            }
-
-            .list-title:hover {
-                background: rgba(0, 0, 0, 0.1);
-            }
-
-            .list-content {
-                padding: 8px;
-                flex: 1;
-                overflow-y: auto;
-            }
-
-            .cards-container {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .card {
-                background: var(--card-bg);
-                border-radius: 3px;
-                box-shadow: var(--card-shadow);
-                cursor: pointer;
-                transition: box-shadow 0.2s;
-                position: relative;
-            }
-
-            .card:hover {
-                box-shadow: var(--card-hover-shadow);
-            }
-
-            .card-content {
-                padding: 8px 12px;
-            }
-
-            .card-title {
-                font-weight: 400;
-                font-size: 14px;
-                margin: 0 0 4px 0;
-                line-height: 1.4;
-            }
-
-            .card-description {
-                font-size: 12px;
-                color: #5e6c84;
-                margin: 0 0 8px 0;
-                line-height: 1.3;
-            }
-
-            .card-meta {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                font-size: 11px;
-                color: #5e6c84;
-            }
-
-            .card-due-date {
-                background: #fff3cd;
-                color: #856404;
-                padding: 2px 6px;
-                border-radius: 2px;
-            }
-
-            .card-due-date.overdue {
-                background: #f8d7da;
-                color: #721c24;
-            }
-
-            .card-actions {
-                opacity: 0;
-                transition: opacity 0.2s;
-            }
-
-            .card:hover .card-actions {
-                opacity: 1;
-            }
-
-            .card-delete {
-                background: none;
-                border: none;
-                color: #5e6c84;
-                cursor: pointer;
-                padding: 2px;
-                border-radius: 2px;
-            }
-
-            .card-delete:hover {
-                background: #ffebee;
-                color: #d32f2f;
-            }
-
-            .add-card-form {
-                margin-top: 8px;
-            }
-
-            .add-card-textarea {
-                width: 100%;
-                min-height: 60px;
-                padding: 8px 12px;
-                border: none;
-                border-radius: 3px;
-                resize: vertical;
-                font-size: 14px;
-                font-family: inherit;
-                box-shadow: inset 0 0 0 2px #0079bf;
-            }
-
-            .add-card-actions {
-                margin-top: 8px;
-                display: flex;
-                gap: 8px;
-                align-items: center;
-            }
-
-            .btn-add {
-                background: #0079bf;
-                color: white;
-                border: none;
-                padding: 6px 12px;
-                border-radius: 3px;
-                cursor: pointer;
-                font-size: 14px;
-            }
-
-            .btn-add:hover {
-                background: #026aa7;
-            }
-
-            .btn-cancel {
-                background: none;
-                border: none;
-                color: #5e6c84;
-                cursor: pointer;
-                font-size: 24px;
-                padding: 0;
-            }
-
-            .add-card-trigger {
-                color: #5e6c84;
-                background: none;
-                border: none;
-                padding: 8px;
-                cursor: pointer;
-                font-size: 14px;
-                width: 100%;
-                text-align: left;
-                border-radius: 3px;
-            }
-
-            .add-card-trigger:hover {
-                background: rgba(0, 0, 0, 0.1);
-                color: #172b4d;
-            }
-
-            .add-list {
-                background: rgba(255, 255, 255, 0.24);
-                border-radius: 3px;
-                width: 272px;
-                flex-shrink: 0;
-                padding: 12px;
-            }
-
-            .add-list-trigger {
-                background: none;
-                border: none;
-                color: white;
-                cursor: pointer;
-                font-size: 14px;
-                width: 100%;
-                text-align: left;
-                padding: 8px;
-                border-radius: 3px;
-            }
-
-            .add-list-trigger:hover {
-                background: rgba(255, 255, 255, 0.2);
-            }
-
-            .add-list-form input {
-                width: 100%;
-                padding: 8px 12px;
-                border: none;
-                border-radius: 3px;
-                font-size: 14px;
-                margin-bottom: 8px;
-            }
-
-            .modal {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.64);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 1000;
-            }
-
-            .modal-content {
-                background: white;
-                border-radius: 8px;
-                padding: 24px;
-                width: 90%;
-                max-width: 500px;
-                max-height: 80vh;
-                overflow-y: auto;
-            }
-
-            .modal-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 20px;
-            }
-
-            .modal-title {
-                font-size: 20px;
-                font-weight: 600;
-                margin: 0;
-            }
-
-            .modal-close {
-                background: none;
-                border: none;
-                font-size: 24px;
-                cursor: pointer;
-                color: #5e6c84;
-            }
-
-            .form-group {
-                margin-bottom: 16px;
-            }
-
-            .form-group label {
-                display: block;
-                margin-bottom: 4px;
-                font-weight: 500;
-                font-size: 14px;
-            }
-
-            .form-group input,
-            .form-group textarea {
-                width: 100%;
-                padding: 8px 12px;
-                border: 2px solid #ddd;
-                border-radius: 3px;
-                font-size: 14px;
-                font-family: inherit;
-            }
-
-            .form-group input:focus,
-            .form-group textarea:focus {
-                outline: none;
-                border-color: #0079bf;
-            }
-
-            .form-actions {
-                display: flex;
-                gap: 12px;
-                justify-content: flex-end;
-            }
-
-            .loading {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.8);
-                color: white;
-                padding: 16px 24px;
-                border-radius: 4px;
-                z-index: 2000;
-            }
-
-            .draggable-mirror {
-                opacity: 0.8;
-                transform: rotate(5deg);
-            }
-
-            .card.dragging {
-                opacity: 0.5;
-                transform: rotate(2deg);
-                transition: transform 0.2s;
-            }
-
-            .cards-container.drag-over {
-                background: rgba(0, 121, 191, 0.1) !important;
-                border: 2px dashed #0079bf;
-                border-radius: 6px;
-                min-height: 60px;
-            }
-
-            .cards-container {
-                min-height: 40px;
-                transition: all 0.2s ease;
-            }
-
-            .drop-indicator {
-                height: 2px;
-                background: #0079bf;
-                margin: 4px 0;
-                border-radius: 1px;
-                opacity: 0;
-                transition: opacity 0.2s;
-            }
-
-            .drop-indicator.active {
-                opacity: 1;
-            }
-        </style>
+        <!-- External CSS -->
+        <link rel="stylesheet" href="style.css" />
     </head>
     <body>
         <div id="root"></div>
@@ -803,7 +410,7 @@
                                         onChange={(e) =>
                                             setNewCardTitle(e.target.value)
                                         }
-                                        placeholder="Enter a title for this card..."
+                                        placeholder="What would you like to practice?"
                                         onKeyDown={handleKeyDown}
                                     />
                                     <div className="add-card-actions">
@@ -811,7 +418,7 @@
                                             className="btn-add"
                                             onClick={createCard}
                                         >
-                                            Add Card
+                                            Add Practice Item
                                         </button>
                                         <button
                                             className="btn-cancel"
@@ -826,7 +433,7 @@
                                     className="add-card-trigger"
                                     onClick={startAddCard}
                                 >
-                                    + Add a card
+                                    + Add practice item
                                 </button>
                             )}
                         </div>
@@ -906,14 +513,16 @@
 
                         if (!boards || boards.length === 0) {
                             console.log(
-                                "No boards found, creating default board...",
+                                "No practice space found, creating your first one...",
                             );
                             try {
                                 await createBoard({
-                                    variables: { input: { name: "My Board" } },
+                                    variables: {
+                                        input: { name: "My Practice Journey" },
+                                    },
                                 });
                                 console.log(
-                                    "Default board created, refetching...",
+                                    "Practice space created, loading...",
                                 );
                                 // The useQuery will automatically refetch
                             } catch (err) {
@@ -922,7 +531,7 @@
                                     err,
                                 );
                                 showError(
-                                    "Failed to create default board: " +
+                                    "Couldn't set up your practice space: " +
                                         err.message,
                                 );
                             }
@@ -960,47 +569,91 @@
                                     currentBoard.lists.length === 0
                                 ) {
                                     console.log("Creating default list...");
-                                    // Create default list first
-                                    const listResult = await createList({
-                                        variables: {
-                                            input: {
-                                                name: "To Do",
-                                                boardId: currentBoard.id,
-                                            },
+                                    // Create multiple default practice categories
+                                    const categories = [
+                                        {
+                                            name: "Songs to Learn",
+                                            items: [
+                                                "Choose a song you love 🎵",
+                                                "Start with simple chords",
+                                            ],
                                         },
-                                    });
-
-                                    console.log("List result:", listResult);
-
-                                    // Create default card in the new list
-                                    console.log("Creating card in new list...");
-                                    const cardResult = await createCard({
-                                        variables: {
-                                            input: {
-                                                title: "Welcome to your board! 👋",
-                                                listId: listResult.data
-                                                    .createList.id,
-                                            },
+                                        {
+                                            name: "Scales & Exercises",
+                                            items: [
+                                                "Practice major scale",
+                                                "Work on finger exercises",
+                                            ],
                                         },
-                                    });
+                                        {
+                                            name: "Music Theory",
+                                            items: [
+                                                "Learn chord progressions",
+                                                "Study circle of fifths",
+                                            ],
+                                        },
+                                        { name: "Practice Log", items: [] },
+                                    ];
 
-                                    console.log("Card result:", cardResult);
+                                    for (const category of categories) {
+                                        const listResult = await createList({
+                                            variables: {
+                                                input: {
+                                                    name: category.name,
+                                                    boardId: currentBoard.id,
+                                                },
+                                            },
+                                        });
+
+                                        console.log(
+                                            `Created category: ${category.name}`,
+                                        );
+
+                                        // Add default items to each category
+                                        for (const item of category.items) {
+                                            await createCard({
+                                                variables: {
+                                                    input: {
+                                                        title: item,
+                                                        listId: listResult.data
+                                                            .createList.id,
+                                                    },
+                                                },
+                                            });
+                                        }
+                                    }
                                 } else {
+                                    // Add some starter practice items to existing categories
                                     console.log(
-                                        "Creating card in existing list...",
+                                        "Adding starter practice items...",
                                     );
-                                    // Create card in first existing list
-                                    const cardResult = await createCard({
-                                        variables: {
-                                            input: {
-                                                title: "Welcome to your board! 👋",
-                                                listId: currentBoard.lists[0]
-                                                    .id,
-                                            },
-                                        },
-                                    });
 
-                                    console.log("Card result:", cardResult);
+                                    const starterItems = [
+                                        "Pick a favorite song to learn 🎵",
+                                        "Practice 10 minutes daily",
+                                        "Record yourself playing",
+                                    ];
+
+                                    for (
+                                        let i = 0;
+                                        i <
+                                        Math.min(
+                                            starterItems.length,
+                                            currentBoard.lists.length,
+                                        );
+                                        i++
+                                    ) {
+                                        await createCard({
+                                            variables: {
+                                                input: {
+                                                    title: starterItems[i],
+                                                    listId: currentBoard.lists[
+                                                        i
+                                                    ].id,
+                                                },
+                                            },
+                                        });
+                                    }
                                 }
 
                                 console.log("Refetching board...");
@@ -1012,7 +665,7 @@
                                     err,
                                 );
                                 showError(
-                                    "Failed to create default content: " +
+                                    "Couldn't add your first practice item: " +
                                         err.message,
                                 );
                             }
@@ -1051,10 +704,10 @@
                 };
 
                 const handleManualTestCard = async () => {
-                    console.log("Manual test button clicked!");
-                    alert("Manual test started! Check console.");
+                    console.log("Quick practice button clicked!");
+                    alert("Adding a quick practice item!");
                     if (!currentBoard) {
-                        alert("No current board!");
+                        alert("Practice space not ready!");
                         return;
                     }
 
@@ -1072,7 +725,7 @@
                             const listResult = await createList({
                                 variables: {
                                     input: {
-                                        name: "Test List",
+                                        name: "Practice Sessions",
                                         boardId: currentBoard.id,
                                     },
                                 },
@@ -1082,7 +735,7 @@
                             await createCard({
                                 variables: {
                                     input: {
-                                        title: "Manual Test Card! 🎯",
+                                        title: "Work on rhythm exercises 🥁",
                                         listId: listResult.data.createList.id,
                                     },
                                 },
@@ -1095,7 +748,7 @@
                             await createCard({
                                 variables: {
                                     input: {
-                                        title: "Manual Test Card! 🎯",
+                                        title: "Work on rhythm exercises 🥁",
                                         listId: currentBoard.lists[0].id,
                                     },
                                 },
@@ -1103,10 +756,10 @@
                         }
 
                         await refetchBoard();
-                        console.log("Manual card creation completed");
+                        console.log("Quick practice item added");
                     } catch (err) {
-                        console.error("Manual test error:", err);
-                        showError("Manual test failed: " + err.message);
+                        console.error("Quick practice error:", err);
+                        showError("Couldn't add practice item: " + err.message);
                     }
                 };
 
@@ -1166,14 +819,16 @@
                     <>
                         {/* Navigation */}
                         <nav className="navbar">
-                            <h1>🗂️ {currentBoard?.name || "Board App"}</h1>
+                            <h1>
+                                🎵 {currentBoard?.name || "PracticeProgress"}
+                            </h1>
                             {currentBoard && (
                                 <button
                                     className="btn-primary"
                                     onClick={handleManualTestCard}
                                     style={{ marginLeft: "auto" }}
                                 >
-                                    🎯 Test Card
+                                    ➕ Quick Practice
                                 </button>
                             )}
                         </nav>
@@ -1202,7 +857,7 @@
                                             className="add-list-trigger"
                                             onClick={() => setAddingList(true)}
                                         >
-                                            + Add another list
+                                            + Add practice category
                                         </button>
                                     ) : (
                                         <div className="add-list-form">
@@ -1214,7 +869,7 @@
                                                         e.target.value,
                                                     )
                                                 }
-                                                placeholder="Enter list title..."
+                                                placeholder="e.g. Jazz Standards, Classical Pieces, Improvisation..."
                                                 onKeyDown={(e) => {
                                                     if (e.key === "Enter")
                                                         handleCreateList();
@@ -1231,7 +886,7 @@
                                                         handleCreateList()
                                                     }
                                                 >
-                                                    Add List
+                                                    Add Category
                                                 </button>
                                                 <button
                                                     className="btn-cancel"
