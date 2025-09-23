@@ -167,6 +167,16 @@ body {
     background: rgba(0, 102, 204, 0.2);
 }
 
+.session-duration {
+    display: inline-block;
+}
+
+.session-audio-indicator {
+    display: inline-block;
+    margin-left: 4px;
+    opacity: 0.7;
+}
+
 /* Total Practice Section */
 .total-practice {
     text-align: center;
@@ -252,6 +262,164 @@ body {
     outline: none;
     border-color: #0066cc;
     box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+/* Mode Selector */
+.mode-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.mode-button {
+    flex: 1;
+    border: 1px solid #d2d2d7;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 16px;
+    font-weight: 500;
+    background: white;
+    color: #6e6e73;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mode-button:hover {
+    border-color: #0066cc;
+    color: #0066cc;
+}
+
+.mode-button.active {
+    background: #0066cc;
+    color: white;
+    border-color: #0066cc;
+}
+
+.mode-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Recording Controls */
+.recording-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px dashed #d2d2d7;
+}
+
+.record-button {
+    border: none;
+    border-radius: 12px;
+    padding: 16px 32px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 200px;
+}
+
+.record-button.start {
+    background: #34c759;
+    color: white;
+}
+
+.record-button.start:hover {
+    background: #28a745;
+    transform: translateY(-1px);
+}
+
+.record-button.stop {
+    background: #ff3b30;
+    color: white;
+}
+
+.record-button.stop:hover {
+    background: #d70015;
+    transform: translateY(-1px);
+}
+
+.recording-timer {
+    font-size: 24px;
+    font-weight: 600;
+    color: #ff3b30;
+    font-family: "SF Mono", Monaco, monospace;
+    background: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: 1px solid #ff3b30;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.recording-result {
+    text-align: center;
+    padding: 12px;
+    background: #e8f4fd;
+    border-radius: 8px;
+    color: #0066cc;
+    font-weight: 500;
+    margin-top: 8px;
+}
+
+.recording-info {
+    margin-bottom: 12px;
+}
+
+.audio-controls {
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+.audio-button {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.audio-button.play {
+    background: #34c759;
+    color: white;
+}
+
+.audio-button.play:hover {
+    background: #28a745;
+}
+
+.audio-button.stop {
+    background: #ff9500;
+    color: white;
+}
+
+.audio-button.stop:hover {
+    background: #e6840a;
+}
+
+.existing-audio-controls {
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
 }
 
 /* Modal Actions */

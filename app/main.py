@@ -20,6 +20,8 @@ class PracticeSession:
     id: int
     date: str
     duration_minutes: int
+    audio_data: Optional[str]  # Base64 encoded audio data
+    mime_type: Optional[str]  # MIME type for audio data
 
 @strawberry.type
 class DayPractice:
@@ -36,11 +38,15 @@ class WeeklyPractice:
 class CreatePracticeSessionInput:
     date: str
     duration_minutes: int
+    audio_data: Optional[str] = None  # Base64 encoded audio data
+    mime_type: Optional[str] = None  # MIME type for audio data
 
 @strawberry.input
 class UpdatePracticeSessionInput:
     id: int
     duration_minutes: int
+    audio_data: Optional[str] = None  # Base64 encoded audio data
+    mime_type: Optional[str] = None  # MIME type for audio data
 
 @strawberry.type
 class Query:
@@ -69,7 +75,9 @@ class Query:
                     day_sessions.append(PracticeSession(
                         id=session["id"],
                         date=session["date"],
-                        duration_minutes=session["duration_minutes"]
+                        duration_minutes=session["duration_minutes"],
+                        audio_data=session.get("audio_data"),
+                        mime_type=session.get("mime_type")
                     ))
                     total_minutes += session["duration_minutes"]
 
@@ -106,14 +114,18 @@ class Mutation:
         new_session = {
             "id": next_id,
             "date": input.date,
-            "duration_minutes": input.duration_minutes
+            "duration_minutes": input.duration_minutes,
+            "audio_data": input.audio_data,
+            "mime_type": input.mime_type
         }
 
         sessions.append(new_session)
         session_obj = PracticeSession(
             id=next_id,
             date=input.date,
-            duration_minutes=input.duration_minutes
+            duration_minutes=input.duration_minutes,
+            audio_data=input.audio_data,
+            mime_type=input.mime_type
         )
 
         next_id += 1
@@ -124,10 +136,16 @@ class Mutation:
         for session in sessions:
             if session["id"] == input.id:
                 session["duration_minutes"] = input.duration_minutes
+                if input.audio_data is not None:
+                    session["audio_data"] = input.audio_data
+                if input.mime_type is not None:
+                    session["mime_type"] = input.mime_type
                 return PracticeSession(
                     id=session["id"],
                     date=session["date"],
-                    duration_minutes=session["duration_minutes"]
+                    duration_minutes=session["duration_minutes"],
+                    audio_data=session.get("audio_data"),
+                    mime_type=session.get("mime_type")
                 )
         return None
 
