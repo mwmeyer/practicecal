@@ -8,8 +8,20 @@
             rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
         />
-        <script src="https://unpkg.com/alpinejs" defer></script>
-        <script src="https://cdn.jsdelivr.net/npm/@shopify/draggable@1.0.0-beta.12/lib/draggable.bundle.js"></script>
+
+        <!-- React -->
+        <script
+            crossorigin
+            src="https://unpkg.com/react@18/umd/react.development.js"
+        ></script>
+        <script
+            crossorigin
+            src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+        ></script>
+
+        <!-- Babel for JSX transformation -->
+        <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
         <style>
             :root {
                 --board-bg: #0079bf;
@@ -42,26 +54,6 @@
                 margin: 0;
                 font-size: 18px;
                 font-weight: 700;
-            }
-
-            .board-selector {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            .board-selector select {
-                background: rgba(255, 255, 255, 0.2);
-                border: none;
-                color: white;
-                padding: 6px 12px;
-                border-radius: 3px;
-                font-size: 14px;
-            }
-
-            .board-selector select option {
-                background: #172b4d;
-                color: white;
             }
 
             .btn-primary {
@@ -427,725 +419,872 @@
         </style>
     </head>
     <body>
-        <div x-data="boardApp()" x-init="init()">
-            <!-- Navigation -->
-            <nav class="navbar">
-                <h1>🗂️ Board App</h1>
-                <div class="board-selector">
-                    <select x-model="selectedBoardId" @change="loadBoard()">
-                        <option value="">Select a board...</option>
-                        <template x-for="board in boards" :key="board.id">
-                            <option
-                                :value="board.id"
-                                x-text="board.name"
-                            ></option>
-                        </template>
-                    </select>
-                    <button
-                        class="btn-primary"
-                        @click="showCreateBoardModal = true"
-                    >
-                        + Board
-                    </button>
-                </div>
-            </nav>
+        <div id="root"></div>
 
-            <!-- Board Container -->
-            <div
-                x-show="currentBoard"
-                class="board-container"
-                id="board-container"
-            >
-                <!-- Lists -->
-                <template
-                    x-for="list in currentBoard?.lists || []"
-                    :key="list.id"
-                >
-                    <div class="list" :data-list-id="list.id">
-                        <div class="list-header">
-                            <h3 class="list-title" x-text="list.name"></h3>
-                        </div>
-                        <div class="list-content">
-                            <div
-                                class="cards-container"
-                                :id="`list-${list.id}`"
-                            >
-                                <!-- Cards -->
-                                <template
-                                    x-for="card in list.cards"
-                                    :key="card.id"
-                                >
-                                    <div
-                                        class="card"
-                                        :data-card-id="card.id"
-                                        :data-list-id="list.id"
+        <script type="text/babel">
+            const { useState, useEffect, useRef } = React;
+
+            // Create a simple GraphQL client instead of Apollo for CDN compatibility
+            const gql = (strings, ...values) => {
+                let result = strings[0];
+                for (let i = 1; i < strings.length; i++) {
+                    result += values[i - 1] + strings[i];
+                }
+                return result;
+            };
+
+            const useQuery = (query, options = {}) => {
+                const [data, setData] = useState(null);
+                const [loading, setLoading] = useState(!options.skip);
+                const [error, setError] = useState(null);
+
+                const executeQuery = async () => {
+                    if (options.skip) return;
+                    setLoading(true);
+                    try {
+                        const response = await fetch("/graphql", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                query,
+                                variables: options.variables || {},
+                            }),
+                        });
+                        const result = await response.json();
+                        if (result.errors) {
+                            throw new Error(result.errors[0].message);
+                        }
+                        setData(result);
+                        setError(null);
+                    } catch (err) {
+                        setError(err);
+                        setData(null);
+                    }
+                    setLoading(false);
+                };
+
+                useEffect(() => {
+                    executeQuery();
+                }, [query, JSON.stringify(options.variables), options.skip]);
+
+                return { data, loading, error, refetch: executeQuery };
+            };
+
+            const useMutation = (mutation) => {
+                const [loading, setLoading] = useState(false);
+                const [error, setError] = useState(null);
+
+                const executeMutation = async (options = {}) => {
+                    setLoading(true);
+                    try {
+                        const response = await fetch("/graphql", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                query: mutation,
+                                variables: options.variables || {},
+                            }),
+                        });
+                        const result = await response.json();
+                        if (result.errors) {
+                            throw new Error(result.errors[0].message);
+                        }
+                        setError(null);
+                        return result;
+                    } catch (err) {
+                        setError(err);
+                        throw err;
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+
+                return [executeMutation, { loading, error }];
+            };
+
+            const ApolloProvider = ({ children }) => children;
+
+            // Simple GraphQL client (no Apollo Client needed for CDN setup)
+
+            // GraphQL queries and mutations
+            const GET_BOARDS = gql`
+                query {
+                    boards {
+                        id
+                        name
+                    }
+                }
+            `;
+
+            const GET_BOARD = gql`
+                query ($id: Int!) {
+                    board(id: $id) {
+                        id
+                        name
+                        lists {
+                            id
+                            name
+                            position
+                            cards {
+                                id
+                                title
+                                description
+                                position
+                                dueDate
+                            }
+                        }
+                    }
+                }
+            `;
+
+            const CREATE_BOARD = gql`
+                mutation ($input: CreateBoardInput!) {
+                    createBoard(input: $input) {
+                        id
+                        name
+                    }
+                }
+            `;
+
+            const CREATE_LIST = gql`
+                mutation ($input: CreateListInput!) {
+                    createList(input: $input) {
+                        id
+                        name
+                        position
+                        cards {
+                            id
+                            title
+                            description
+                            position
+                            dueDate
+                        }
+                    }
+                }
+            `;
+
+            const CREATE_CARD = gql`
+                mutation ($input: CreateCardInput!) {
+                    createCard(input: $input) {
+                        id
+                        title
+                        description
+                        position
+                        dueDate
+                    }
+                }
+            `;
+
+            const DELETE_CARD = gql`
+                mutation ($id: Int!) {
+                    deleteCard(id: $id)
+                }
+            `;
+
+            const MOVE_CARD = gql`
+                mutation ($input: MoveCardInput!) {
+                    moveCard(input: $input)
+                }
+            `;
+
+            // Card component
+            function Card({ card, listId, onDelete, onMove }) {
+                const handleDragStart = (e) => {
+                    e.target.classList.add("dragging");
+                    e.dataTransfer.setData("text/plain", card.id.toString());
+                    e.dataTransfer.effectAllowed = "move";
+
+                    // Add visual feedback to all lists
+                    document
+                        .querySelectorAll(".cards-container")
+                        .forEach((list) => {
+                            if (list !== e.target.closest(".cards-container")) {
+                                list.style.background =
+                                    "rgba(0, 121, 191, 0.05)";
+                                list.style.border = "1px dashed #ccc";
+                            }
+                        });
+                };
+
+                const handleDragEnd = (e) => {
+                    e.target.classList.remove("dragging");
+
+                    // Remove visual feedback from all lists
+                    document
+                        .querySelectorAll(".cards-container")
+                        .forEach((list) => {
+                            list.classList.remove("drag-over");
+                            list.style.background = "";
+                            list.style.border = "";
+                        });
+                };
+
+                const formatDate = (dateStr) => {
+                    if (!dateStr) return "";
+                    const date = new Date(dateStr);
+                    return date.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                    });
+                };
+
+                const isOverdue = (dateStr) => {
+                    if (!dateStr) return false;
+                    const today = new Date();
+                    const dueDate = new Date(dateStr);
+                    return dueDate < today;
+                };
+
+                return (
+                    <div
+                        className="card"
+                        data-card-id={card.id}
+                        data-list-id={listId}
+                        draggable="true"
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <div className="card-content">
+                            <h4 className="card-title">{card.title}</h4>
+                            {card.description && (
+                                <p className="card-description">
+                                    {card.description}
+                                </p>
+                            )}
+                            <div className="card-meta">
+                                {card.dueDate && (
+                                    <span
+                                        className={`card-due-date ${isOverdue(card.dueDate) ? "overdue" : ""}`}
                                     >
-                                        <div class="card-content">
-                                            <h4
-                                                class="card-title"
-                                                x-text="card.title"
-                                            ></h4>
-                                            <p
-                                                class="card-description"
-                                                x-show="card.description"
-                                                x-text="card.description"
-                                            ></p>
-                                            <div
-                                                class="card-meta"
-                                                x-show="card.dueDate"
-                                            >
-                                                <span
-                                                    class="card-due-date"
-                                                    :class="{ 'overdue': isOverdue(card.dueDate) }"
-                                                    x-text="formatDate(card.dueDate)"
-                                                ></span>
-                                                <div class="card-actions">
-                                                    <button
-                                                        class="card-delete"
-                                                        @click="deleteCard(card.id)"
-                                                        title="Delete card"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div
-                                                class="card-meta"
-                                                x-show="!card.dueDate"
-                                            >
-                                                <span></span>
-                                                <div class="card-actions">
-                                                    <button
-                                                        class="card-delete"
-                                                        @click="deleteCard(card.id)"
-                                                        title="Delete card"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
+                                        {formatDate(card.dueDate)}
+                                    </span>
+                                )}
+                                <div className="card-actions">
+                                    <button
+                                        className="card-delete"
+                                        onClick={() => onDelete(card.id)}
+                                        title="Delete card"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // List component
+            function List({ list, onCreateCard, onDeleteCard, onMoveCard }) {
+                const [addingCard, setAddingCard] = useState(false);
+                const [newCardTitle, setNewCardTitle] = useState("");
+                const textareaRef = useRef(null);
+
+                const handleDragEnter = (e) => {
+                    e.preventDefault();
+                    e.target
+                        .closest(".cards-container")
+                        .classList.add("drag-over");
+                };
+
+                const handleDragOver = (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                };
+
+                const handleDragLeave = (e) => {
+                    const container = e.target.closest(".cards-container");
+                    if (!container.contains(e.relatedTarget)) {
+                        container.classList.remove("drag-over");
+                    }
+                };
+
+                const handleDrop = async (e) => {
+                    e.preventDefault();
+                    const container = e.target.closest(".cards-container");
+                    container.classList.remove("drag-over");
+
+                    // Remove visual feedback from all lists
+                    document
+                        .querySelectorAll(".cards-container")
+                        .forEach((l) => {
+                            l.style.background = "";
+                            l.style.border = "";
+                        });
+
+                    const cardId = parseInt(
+                        e.dataTransfer.getData("text/plain"),
+                    );
+
+                    // Calculate position based on drop location
+                    const rect = container.getBoundingClientRect();
+                    const y = e.clientY - rect.top;
+                    const cards = Array.from(
+                        container.querySelectorAll(".card"),
+                    );
+                    let position = cards.length;
+
+                    // Find the insertion point
+                    for (let i = 0; i < cards.length; i++) {
+                        const cardRect = cards[i].getBoundingClientRect();
+                        const cardMiddle =
+                            cardRect.top + cardRect.height / 2 - rect.top;
+                        if (y < cardMiddle) {
+                            position = i;
+                            break;
+                        }
+                    }
+
+                    onMoveCard(cardId, list.id, position);
+                };
+
+                const startAddCard = () => {
+                    setAddingCard(true);
+                    setNewCardTitle("");
+                    setTimeout(() => {
+                        if (textareaRef.current) {
+                            textareaRef.current.focus();
+                        }
+                    }, 0);
+                };
+
+                const cancelAddCard = () => {
+                    setAddingCard(false);
+                    setNewCardTitle("");
+                };
+
+                const createCard = () => {
+                    if (!newCardTitle.trim()) return;
+                    onCreateCard(list.id, newCardTitle.trim());
+                    setAddingCard(false);
+                    setNewCardTitle("");
+                };
+
+                const handleKeyDown = (e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        createCard();
+                    } else if (e.key === "Escape") {
+                        cancelAddCard();
+                    }
+                };
+
+                return (
+                    <div className="list" data-list-id={list.id}>
+                        <div className="list-header">
+                            <h3 className="list-title">{list.name}</h3>
+                        </div>
+                        <div className="list-content">
+                            <div
+                                className="cards-container"
+                                id={`list-${list.id}`}
+                                onDragEnter={handleDragEnter}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                            >
+                                {list.cards?.map((card) => (
+                                    <Card
+                                        key={card.id}
+                                        card={card}
+                                        listId={list.id}
+                                        onDelete={onDeleteCard}
+                                        onMove={onMoveCard}
+                                    />
+                                ))}
                             </div>
 
-                            <!-- Add Card Form -->
-                            <div x-show="addingCardToList === list.id">
-                                <div class="add-card-form">
+                            {addingCard ? (
+                                <div className="add-card-form">
                                     <textarea
-                                        class="add-card-textarea"
-                                        x-model="newCard.title"
+                                        ref={textareaRef}
+                                        className="add-card-textarea"
+                                        value={newCardTitle}
+                                        onChange={(e) =>
+                                            setNewCardTitle(e.target.value)
+                                        }
                                         placeholder="Enter a title for this card..."
-                                        @keydown.enter.prevent="createCard(list.id)"
-                                        @keydown.escape="cancelAddCard()"
-                                    ></textarea>
-                                    <div class="add-card-actions">
+                                        onKeyDown={handleKeyDown}
+                                    />
+                                    <div className="add-card-actions">
                                         <button
-                                            class="btn-add"
-                                            @click="createCard(list.id)"
+                                            className="btn-add"
+                                            onClick={createCard}
                                         >
                                             Add Card
                                         </button>
                                         <button
-                                            class="btn-cancel"
-                                            @click="cancelAddCard()"
+                                            className="btn-cancel"
+                                            onClick={cancelAddCard}
                                         >
                                             ×
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Add Card Trigger -->
-                            <button
-                                class="add-card-trigger"
-                                x-show="addingCardToList !== list.id"
-                                @click="startAddCard(list.id)"
-                            >
-                                + Add a card
-                            </button>
-                        </div>
-                    </div>
-                </template>
-
-                <!-- Add List -->
-                <div class="add-list">
-                    <div x-show="!addingList">
-                        <button
-                            class="add-list-trigger"
-                            @click="addingList = true"
-                        >
-                            + Add another list
-                        </button>
-                    </div>
-                    <div x-show="addingList">
-                        <div class="add-list-form">
-                            <input
-                                type="text"
-                                x-model="newList.name"
-                                placeholder="Enter list title..."
-                                @keydown.enter.prevent="createList()"
-                                @keydown.escape="cancelAddList()"
-                            />
-                            <div class="add-card-actions">
-                                <button class="btn-add" @click="createList()">
-                                    Add List
-                                </button>
+                            ) : (
                                 <button
-                                    class="btn-cancel"
-                                    @click="cancelAddList()"
+                                    className="add-card-trigger"
+                                    onClick={startAddCard}
                                 >
-                                    ×
+                                    + Add a card
                                 </button>
-                            </div>
+                            )}
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Create Board Modal -->
-            <div
-                x-show="showCreateBoardModal"
-                class="modal"
-                @click.self="showCreateBoardModal = false"
-            >
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2 class="modal-title">Create New Board</h2>
-                        <button
-                            class="modal-close"
-                            @click="showCreateBoardModal = false"
-                        >
-                            ×
-                        </button>
-                    </div>
-                    <form @submit.prevent="createBoard()">
-                        <div class="form-group">
-                            <label for="board-name">Board Name</label>
-                            <input
-                                type="text"
-                                id="board-name"
-                                x-model="newBoard.name"
-                                placeholder="Enter board name..."
-                                required
-                            />
-                        </div>
-                        <div class="form-actions">
-                            <button
-                                type="button"
-                                class="btn-cancel"
-                                @click="showCreateBoardModal = false"
-                            >
-                                Cancel
-                            </button>
-                            <button type="submit" class="btn-add">
-                                Create Board
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Loading Indicator -->
-            <div x-show="loading" class="loading">
-                <div>Loading...</div>
-            </div>
-
-            <!-- Error Display -->
-            <div
-                x-show="error"
-                style="
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    background: #f8d7da;
-                    color: #721c24;
-                    padding: 12px;
-                    border-radius: 4px;
-                    z-index: 1000;
-                "
-                x-text="error"
-            ></div>
-        </div>
-
-        <script>
-            function boardApp() {
-                return {
-                    boards: [],
-                    currentBoard: null,
-                    selectedBoardId: "",
-                    loading: false,
-                    error: "",
-
-                    // Modals and forms
-                    showCreateBoardModal: false,
-                    addingList: false,
-                    addingCardToList: null,
-
-                    // Form data
-                    newBoard: { name: "" },
-                    newList: { name: "" },
-                    newCard: { title: "", description: "", dueDate: "" },
-
-                    // Drag and drop
-                    draggable: null,
-
-                    async init() {
-                        await this.loadBoards();
-                        if (this.boards.length > 0) {
-                            this.selectedBoardId = this.boards[0].id.toString();
-                            await this.loadBoard();
-                        }
-                        this.initDragAndDrop();
-                    },
-
-                    async request(query, variables = {}) {
-                        const res = await fetch("/graphql", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ query, variables }),
-                        });
-                        const { data, errors } = await res.json();
-                        if (errors) throw new Error(errors[0].message);
-                        return data;
-                    },
-
-                    showError(msg) {
-                        this.error = `Error: ${msg}`;
-                        setTimeout(() => (this.error = ""), 5000);
-                    },
-
-                    async loadBoards() {
-                        this.loading = true;
-                        try {
-                            const data = await this.request(`
-                                query {
-                                    boards {
-                                        id
-                                        name
-                                    }
-                                }
-                            `);
-                            this.boards = data.boards;
-                        } catch (e) {
-                            this.showError(e.message);
-                        }
-                        this.loading = false;
-                    },
-
-                    async loadBoard() {
-                        if (!this.selectedBoardId) {
-                            this.currentBoard = null;
-                            return;
-                        }
-
-                        this.loading = true;
-                        try {
-                            const data = await this.request(
-                                `
-                                query($id: Int!) {
-                                    board(id: $id) {
-                                        id
-                                        name
-                                        lists {
-                                            id
-                                            name
-                                            position
-                                            cards {
-                                                id
-                                                title
-                                                description
-                                                position
-                                                dueDate
-                                            }
-                                        }
-                                    }
-                                }
-                            `,
-                                { id: parseInt(this.selectedBoardId) },
-                            );
-                            this.currentBoard = data.board;
-                            this.$nextTick(() => {
-                                this.setupDragAndDrop();
-                            });
-                        } catch (e) {
-                            this.showError(e.message);
-                        }
-                        this.loading = false;
-                    },
-
-                    async createBoard() {
-                        if (!this.newBoard.name.trim()) return;
-
-                        this.loading = true;
-                        try {
-                            const data = await this.request(
-                                `
-                                mutation($input: CreateBoardInput!) {
-                                    createBoard(input: $input) {
-                                        id
-                                        name
-                                    }
-                                }
-                            `,
-                                { input: { name: this.newBoard.name.trim() } },
-                            );
-
-                            this.boards.push(data.createBoard);
-                            this.selectedBoardId =
-                                data.createBoard.id.toString();
-                            this.newBoard.name = "";
-                            this.showCreateBoardModal = false;
-                            await this.loadBoard();
-                        } catch (e) {
-                            this.showError(e.message);
-                        }
-                        this.loading = false;
-                    },
-
-                    async createList() {
-                        if (!this.newList.name.trim() || !this.currentBoard)
-                            return;
-
-                        this.loading = true;
-                        try {
-                            const data = await this.request(
-                                `
-                                mutation($input: CreateListInput!) {
-                                    createList(input: $input) {
-                                        id
-                                        name
-                                        position
-                                        cards {
-                                            id
-                                            title
-                                            description
-                                            position
-                                            dueDate
-                                        }
-                                    }
-                                }
-                            `,
-                                {
-                                    input: {
-                                        name: this.newList.name.trim(),
-                                        boardId: this.currentBoard.id,
-                                    },
-                                },
-                            );
-
-                            this.currentBoard.lists.push(data.createList);
-                            this.newList.name = "";
-                            this.addingList = false;
-                            this.$nextTick(() => {
-                                this.setupDragAndDrop();
-                            });
-                        } catch (e) {
-                            this.showError(e.message);
-                        }
-                        this.loading = false;
-                    },
-
-                    startAddCard(listId) {
-                        this.addingCardToList = listId;
-                        this.newCard = {
-                            title: "",
-                            description: "",
-                            dueDate: "",
-                        };
-                        this.$nextTick(() => {
-                            const textarea =
-                                document.querySelector(".add-card-textarea");
-                            if (textarea) textarea.focus();
-                        });
-                    },
-
-                    cancelAddCard() {
-                        this.addingCardToList = null;
-                        this.newCard = {
-                            title: "",
-                            description: "",
-                            dueDate: "",
-                        };
-                    },
-
-                    cancelAddList() {
-                        this.addingList = false;
-                        this.newList.name = "";
-                    },
-
-                    async createCard(listId) {
-                        if (!this.newCard.title.trim()) return;
-
-                        this.loading = true;
-                        try {
-                            const data = await this.request(
-                                `
-                                mutation($input: CreateCardInput!) {
-                                    createCard(input: $input) {
-                                        id
-                                        title
-                                        description
-                                        position
-                                        dueDate
-                                    }
-                                }
-                            `,
-                                {
-                                    input: {
-                                        title: this.newCard.title.trim(),
-                                        description: this.newCard.description,
-                                        listId: listId,
-                                        dueDate: this.newCard.dueDate || null,
-                                    },
-                                },
-                            );
-
-                            const list = this.currentBoard.lists.find(
-                                (l) => l.id === listId,
-                            );
-                            if (list) {
-                                list.cards.push(data.createCard);
-                            }
-
-                            this.cancelAddCard();
-                            this.$nextTick(() => {
-                                this.setupDragAndDrop();
-                            });
-                        } catch (e) {
-                            this.showError(e.message);
-                        }
-                        this.loading = false;
-                    },
-
-                    async deleteCard(cardId) {
-                        this.loading = true;
-                        try {
-                            await this.request(
-                                `
-                                mutation($id: Int!) {
-                                    deleteCard(id: $id)
-                                }
-                            `,
-                                { id: cardId },
-                            );
-
-                            // Remove card from current board
-                            this.currentBoard.lists.forEach((list) => {
-                                list.cards = list.cards.filter(
-                                    (card) => card.id !== cardId,
-                                );
-                            });
-                        } catch (e) {
-                            this.showError(e.message);
-                        }
-                        this.loading = false;
-                    },
-
-                    async moveCard(cardId, targetListId, position) {
-                        try {
-                            await this.request(
-                                `
-                                mutation($input: MoveCardInput!) {
-                                    moveCard(input: $input)
-                                }
-                            `,
-                                {
-                                    input: {
-                                        cardId: cardId,
-                                        targetListId: targetListId,
-                                        position: position,
-                                    },
-                                },
-                            );
-                        } catch (e) {
-                            this.showError(e.message);
-                            // Reload the board to sync state
-                            await this.loadBoard();
-                        }
-                    },
-
-                    initDragAndDrop() {
-                        // Re-initialize drag and drop after board loads
-                        this.$watch("currentBoard", () => {
-                            if (this.currentBoard) {
-                                this.$nextTick(() => {
-                                    this.setupDragAndDrop();
-                                });
-                            }
-                        });
-                    },
-
-                    setupDragAndDrop() {
-                        // Store reference to this for use in event handlers
-                        const self = this;
-
-                        // Setup drag and drop for cards
-                        const cards = document.querySelectorAll(".card");
-                        cards.forEach((card) => {
-                            if (!card.hasAttribute("draggable")) {
-                                card.draggable = true;
-
-                                card.addEventListener(
-                                    "dragstart",
-                                    function (e) {
-                                        this.classList.add("dragging");
-                                        e.dataTransfer.setData(
-                                            "text/plain",
-                                            this.dataset.cardId,
-                                        );
-                                        e.dataTransfer.effectAllowed = "move";
-
-                                        // Add visual feedback to all lists
-                                        document
-                                            .querySelectorAll(
-                                                ".cards-container",
-                                            )
-                                            .forEach((list) => {
-                                                if (
-                                                    list !==
-                                                    this.closest(
-                                                        ".cards-container",
-                                                    )
-                                                ) {
-                                                    list.style.background =
-                                                        "rgba(0, 121, 191, 0.05)";
-                                                    list.style.border =
-                                                        "1px dashed #ccc";
-                                                }
-                                            });
-                                    },
-                                );
-
-                                card.addEventListener("dragend", function (e) {
-                                    this.classList.remove("dragging");
-
-                                    // Remove visual feedback from all lists
-                                    document
-                                        .querySelectorAll(".cards-container")
-                                        .forEach((list) => {
-                                            list.classList.remove("drag-over");
-                                            list.style.background = "";
-                                            list.style.border = "";
-                                        });
-                                });
-                            }
-                        });
-
-                        // Setup drop zones for lists
-                        const lists =
-                            document.querySelectorAll(".cards-container");
-                        lists.forEach((list) => {
-                            if (!list.hasAttribute("data-drop-setup")) {
-                                list.setAttribute("data-drop-setup", "true");
-
-                                list.addEventListener(
-                                    "dragenter",
-                                    function (e) {
-                                        e.preventDefault();
-                                        this.classList.add("drag-over");
-                                    },
-                                );
-
-                                list.addEventListener("dragover", function (e) {
-                                    e.preventDefault();
-                                    e.dataTransfer.dropEffect = "move";
-                                });
-
-                                list.addEventListener(
-                                    "dragleave",
-                                    function (e) {
-                                        if (!this.contains(e.relatedTarget)) {
-                                            this.classList.remove("drag-over");
-                                        }
-                                    },
-                                );
-
-                                list.addEventListener(
-                                    "drop",
-                                    async function (e) {
-                                        e.preventDefault();
-                                        this.classList.remove("drag-over");
-
-                                        // Remove visual feedback from all lists
-                                        document
-                                            .querySelectorAll(
-                                                ".cards-container",
-                                            )
-                                            .forEach((l) => {
-                                                l.style.background = "";
-                                                l.style.border = "";
-                                            });
-
-                                        const cardId = parseInt(
-                                            e.dataTransfer.getData(
-                                                "text/plain",
-                                            ),
-                                        );
-                                        const targetListId = parseInt(
-                                            this.id.replace("list-", ""),
-                                        );
-
-                                        // Calculate position based on drop location
-                                        const rect =
-                                            this.getBoundingClientRect();
-                                        const y = e.clientY - rect.top;
-                                        const cards = Array.from(
-                                            this.querySelectorAll(".card"),
-                                        );
-                                        let position = cards.length;
-
-                                        // Find the insertion point
-                                        for (let i = 0; i < cards.length; i++) {
-                                            const cardRect =
-                                                cards[
-                                                    i
-                                                ].getBoundingClientRect();
-                                            const cardMiddle =
-                                                cardRect.top +
-                                                cardRect.height / 2 -
-                                                rect.top;
-                                            if (y < cardMiddle) {
-                                                position = i;
-                                                break;
-                                            }
-                                        }
-
-                                        try {
-                                            await self.moveCard(
-                                                cardId,
-                                                targetListId,
-                                                position,
-                                            );
-                                            await self.loadBoard();
-                                        } catch (error) {
-                                            self.showError(
-                                                "Failed to move card",
-                                            );
-                                        }
-                                    },
-                                );
-                            }
-                        });
-                    },
-
-                    formatDate(dateStr) {
-                        if (!dateStr) return "";
-                        const date = new Date(dateStr);
-                        return date.toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                        });
-                    },
-
-                    isOverdue(dateStr) {
-                        if (!dateStr) return false;
-                        const today = new Date();
-                        const dueDate = new Date(dateStr);
-                        return dueDate < today;
-                    },
-                };
+                );
             }
+
+            // Main Board App component
+            function BoardApp() {
+                const [addingList, setAddingList] = useState(false);
+                const [newListName, setNewListName] = useState("");
+                const [error, setError] = useState("");
+
+                const { data: boardsData, loading: boardsLoading } =
+                    useQuery(GET_BOARDS);
+
+                console.log(
+                    "GET_BOARDS query result:",
+                    boardsData,
+                    "loading:",
+                    boardsLoading,
+                );
+
+                if (boardsData?.data) {
+                    console.log("Boards data.data:", boardsData.data);
+                    console.log("Boards array:", boardsData.data.boards);
+                }
+
+                // Get first board ID
+                const firstBoardId = boardsData?.data?.boards?.[0]?.id;
+                console.log("First board ID:", firstBoardId);
+
+                const {
+                    data: boardData,
+                    loading: boardLoading,
+                    refetch: refetchBoard,
+                } = useQuery(GET_BOARD, {
+                    variables: { id: firstBoardId },
+                    skip: !firstBoardId,
+                });
+
+                console.log(
+                    "GET_BOARD query result:",
+                    boardData,
+                    "loading:",
+                    boardLoading,
+                    "skip:",
+                    !firstBoardId,
+                );
+
+                const [createBoard] = useMutation(CREATE_BOARD);
+                const [createList] = useMutation(CREATE_LIST);
+                const [createCard] = useMutation(CREATE_CARD);
+                const [deleteCard] = useMutation(DELETE_CARD);
+                const [moveCard] = useMutation(MOVE_CARD);
+
+                const currentBoard = boardData?.data?.board || null;
+                const loading = boardsLoading || boardLoading;
+
+                // Debug logging
+                console.log("Component render - currentBoard:", currentBoard);
+                console.log("Component render - loading:", loading);
+                console.log("Component render - firstBoardId:", firstBoardId);
+
+                const showError = (msg) => {
+                    setError(`Error: ${msg}`);
+                    setTimeout(() => setError(""), 5000);
+                };
+
+                // Create default board if none exists
+                useEffect(() => {
+                    const createDefaultBoard = async () => {
+                        if (boardsLoading) return;
+
+                        const boards = boardsData?.data?.boards;
+                        console.log("Checking for boards:", boards);
+
+                        if (!boards || boards.length === 0) {
+                            console.log(
+                                "No boards found, creating default board...",
+                            );
+                            try {
+                                await createBoard({
+                                    variables: { input: { name: "My Board" } },
+                                });
+                                console.log(
+                                    "Default board created, refetching...",
+                                );
+                                // The useQuery will automatically refetch
+                            } catch (err) {
+                                console.error(
+                                    "Failed to create default board:",
+                                    err,
+                                );
+                                showError(
+                                    "Failed to create default board: " +
+                                        err.message,
+                                );
+                            }
+                        }
+                    };
+
+                    createDefaultBoard();
+                }, [boardsData, boardsLoading]);
+
+                // Simple check for default content
+                useEffect(() => {
+                    console.log("useEffect triggered!");
+                    console.log("useEffect - currentBoard:", currentBoard);
+                    console.log("useEffect - loading:", loading);
+
+                    const createDefaultContent = async () => {
+                        if (!currentBoard || loading) return;
+
+                        console.log("Checking board:", currentBoard);
+                        console.log("Lists:", currentBoard.lists);
+
+                        // Check if we have any cards at all
+                        const hasCards = currentBoard.lists?.some(
+                            (list) => list.cards?.length > 0,
+                        );
+
+                        console.log("Has cards:", hasCards);
+
+                        if (!hasCards) {
+                            try {
+                                console.log("Creating default content...");
+                                // If no lists exist, create default list and card
+                                if (
+                                    !currentBoard.lists ||
+                                    currentBoard.lists.length === 0
+                                ) {
+                                    console.log("Creating default list...");
+                                    // Create default list first
+                                    const listResult = await createList({
+                                        variables: {
+                                            input: {
+                                                name: "To Do",
+                                                boardId: currentBoard.id,
+                                            },
+                                        },
+                                    });
+
+                                    console.log("List result:", listResult);
+
+                                    // Create default card in the new list
+                                    console.log("Creating card in new list...");
+                                    const cardResult = await createCard({
+                                        variables: {
+                                            input: {
+                                                title: "Welcome to your board! 👋",
+                                                listId: listResult.data
+                                                    .createList.id,
+                                            },
+                                        },
+                                    });
+
+                                    console.log("Card result:", cardResult);
+                                } else {
+                                    console.log(
+                                        "Creating card in existing list...",
+                                    );
+                                    // Create card in first existing list
+                                    const cardResult = await createCard({
+                                        variables: {
+                                            input: {
+                                                title: "Welcome to your board! 👋",
+                                                listId: currentBoard.lists[0]
+                                                    .id,
+                                            },
+                                        },
+                                    });
+
+                                    console.log("Card result:", cardResult);
+                                }
+
+                                console.log("Refetching board...");
+                                await refetchBoard();
+                                console.log("Board refetched successfully");
+                            } catch (err) {
+                                console.error(
+                                    "Error creating default content:",
+                                    err,
+                                );
+                                showError(
+                                    "Failed to create default content: " +
+                                        err.message,
+                                );
+                            }
+                        }
+                    };
+
+                    createDefaultContent();
+                }, [currentBoard, loading]);
+
+                const handleCreateList = async (
+                    listName,
+                    isDefault = false,
+                ) => {
+                    const name = listName || newListName.trim();
+                    if (!name || !currentBoard) return;
+
+                    try {
+                        const result = await createList({
+                            variables: {
+                                input: {
+                                    name: name,
+                                    boardId: currentBoard.id,
+                                },
+                            },
+                        });
+
+                        await refetchBoard();
+
+                        if (!isDefault) {
+                            setNewListName("");
+                            setAddingList(false);
+                        }
+                    } catch (err) {
+                        showError(err.message);
+                    }
+                };
+
+                const handleManualTestCard = async () => {
+                    console.log("Manual test button clicked!");
+                    alert("Manual test started! Check console.");
+                    if (!currentBoard) {
+                        alert("No current board!");
+                        return;
+                    }
+
+                    try {
+                        console.log(
+                            "Manual test - current board:",
+                            currentBoard,
+                        );
+
+                        if (
+                            !currentBoard.lists ||
+                            currentBoard.lists.length === 0
+                        ) {
+                            console.log("No lists, creating one first...");
+                            const listResult = await createList({
+                                variables: {
+                                    input: {
+                                        name: "Test List",
+                                        boardId: currentBoard.id,
+                                    },
+                                },
+                            });
+                            console.log("Created list:", listResult);
+
+                            await createCard({
+                                variables: {
+                                    input: {
+                                        title: "Manual Test Card! 🎯",
+                                        listId: listResult.data.createList.id,
+                                    },
+                                },
+                            });
+                        } else {
+                            console.log(
+                                "Creating card in first list:",
+                                currentBoard.lists[0],
+                            );
+                            await createCard({
+                                variables: {
+                                    input: {
+                                        title: "Manual Test Card! 🎯",
+                                        listId: currentBoard.lists[0].id,
+                                    },
+                                },
+                            });
+                        }
+
+                        await refetchBoard();
+                        console.log("Manual card creation completed");
+                    } catch (err) {
+                        console.error("Manual test error:", err);
+                        showError("Manual test failed: " + err.message);
+                    }
+                };
+
+                const handleCreateCard = async (listId, title) => {
+                    try {
+                        await createCard({
+                            variables: {
+                                input: {
+                                    title,
+                                    listId: listId,
+                                },
+                            },
+                        });
+
+                        await refetchBoard();
+                    } catch (err) {
+                        showError(err.message);
+                    }
+                };
+
+                const handleDeleteCard = async (cardId) => {
+                    try {
+                        await deleteCard({
+                            variables: { id: cardId },
+                        });
+
+                        await refetchBoard();
+                    } catch (err) {
+                        showError(err.message);
+                    }
+                };
+
+                const handleMoveCard = async (
+                    cardId,
+                    targetListId,
+                    position,
+                ) => {
+                    try {
+                        await moveCard({
+                            variables: {
+                                input: {
+                                    cardId,
+                                    targetListId,
+                                    position,
+                                },
+                            },
+                        });
+
+                        await refetchBoard();
+                    } catch (err) {
+                        showError(err.message);
+                        await refetchBoard(); // Reload to sync state
+                    }
+                };
+
+                return (
+                    <>
+                        {/* Navigation */}
+                        <nav className="navbar">
+                            <h1>🗂️ {currentBoard?.name || "Board App"}</h1>
+                            {currentBoard && (
+                                <button
+                                    className="btn-primary"
+                                    onClick={handleManualTestCard}
+                                    style={{ marginLeft: "auto" }}
+                                >
+                                    🎯 Test Card
+                                </button>
+                            )}
+                        </nav>
+
+                        {/* Board Container */}
+                        {currentBoard && (
+                            <div
+                                className="board-container"
+                                id="board-container"
+                            >
+                                {/* Lists */}
+                                {currentBoard.lists?.map((list) => (
+                                    <List
+                                        key={list.id}
+                                        list={list}
+                                        onCreateCard={handleCreateCard}
+                                        onDeleteCard={handleDeleteCard}
+                                        onMoveCard={handleMoveCard}
+                                    />
+                                ))}
+
+                                {/* Add List */}
+                                <div className="add-list">
+                                    {!addingList ? (
+                                        <button
+                                            className="add-list-trigger"
+                                            onClick={() => setAddingList(true)}
+                                        >
+                                            + Add another list
+                                        </button>
+                                    ) : (
+                                        <div className="add-list-form">
+                                            <input
+                                                type="text"
+                                                value={newListName}
+                                                onChange={(e) =>
+                                                    setNewListName(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Enter list title..."
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter")
+                                                        handleCreateList();
+                                                    if (e.key === "Escape") {
+                                                        setAddingList(false);
+                                                        setNewListName("");
+                                                    }
+                                                }}
+                                            />
+                                            <div className="add-card-actions">
+                                                <button
+                                                    className="btn-add"
+                                                    onClick={() =>
+                                                        handleCreateList()
+                                                    }
+                                                >
+                                                    Add List
+                                                </button>
+                                                <button
+                                                    className="btn-cancel"
+                                                    onClick={() => {
+                                                        setAddingList(false);
+                                                        setNewListName("");
+                                                    }}
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Loading Indicator */}
+                        {loading && (
+                            <div className="loading">
+                                <div>Loading...</div>
+                            </div>
+                        )}
+
+                        {/* Error Display */}
+                        {error && (
+                            <div
+                                style={{
+                                    position: "fixed",
+                                    top: "20px",
+                                    right: "20px",
+                                    background: "#f8d7da",
+                                    color: "#721c24",
+                                    padding: "12px",
+                                    borderRadius: "4px",
+                                    zIndex: 1000,
+                                }}
+                            >
+                                {error}
+                            </div>
+                        )}
+                    </>
+                );
+            }
+
+            // Root App component
+            function App() {
+                return <BoardApp />;
+            }
+
+            // Render the app
+            const root = ReactDOM.createRoot(document.getElementById("root"));
+            root.render(<App />);
         </script>
     </body>
 </html>
