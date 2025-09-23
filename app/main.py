@@ -1,325 +1,259 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from typing import List, Optional
-from datetime import datetime
-
+from datetime import datetime, date, timedelta
 import strawberry
-
 from strawberry.fastapi import GraphQLRouter
 
 
-# In-memory storage (replace with database in production)
-boards_storage = [
-    {"id": 1, "name": "My First Board"},
-    {"id": 2, "name": "Personal Tasks"}
+# In-memory storage for practice sessions
+practice_sessions_storage = [
+    {
+        "id": 1,
+        "instrument": "Guitar",
+        "date": "2024-01-15",
+        "duration_minutes": 30,
+        "notes": "Worked on scales and chord progressions",
+        "week_start": "2024-01-14"  # Sunday of that week
+    },
+    {
+        "id": 2,
+        "instrument": "Piano",
+        "date": "2024-01-16",
+        "duration_minutes": 45,
+        "notes": "Bach Invention No. 1 - slow practice",
+        "week_start": "2024-01-14"
+    },
+    {
+        "id": 3,
+        "instrument": "Guitar",
+        "date": "2024-01-17",
+        "duration_minutes": 25,
+        "notes": "Song practice - Hotel California intro",
+        "week_start": "2024-01-14"
+    }
 ]
 
-lists_storage = [
-    {"id": 1, "name": "To Do", "board_id": 1, "position": 0},
-    {"id": 2, "name": "In Progress", "board_id": 1, "position": 1},
-    {"id": 3, "name": "Done", "board_id": 1, "position": 2},
-    {"id": 4, "name": "Backlog", "board_id": 2, "position": 0},
-    {"id": 5, "name": "Current", "board_id": 2, "position": 1}
-]
+next_session_id = 4
 
-cards_storage = [
-    {"id": 1, "title": "Buy milk", "description": "Get organic milk from the store", "list_id": 1, "position": 0, "due_date": None},
-    {"id": 2, "title": "Read a book", "description": "Finish reading 'Clean Code'", "list_id": 1, "position": 1, "due_date": "2024-01-15"},
-    {"id": 3, "title": "Write documentation", "description": "Complete API documentation", "list_id": 2, "position": 0, "due_date": None},
-    {"id": 4, "title": "Exercise", "description": "30 minutes workout", "list_id": 5, "position": 0, "due_date": None}
-]
 
-next_board_id = 3
-next_list_id = 6
-next_card_id = 5
+def get_week_start(date_str: str) -> str:
+    """Get the Sunday date for the week containing the given date"""
+    target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    days_since_sunday = target_date.weekday() + 1  # Monday is 0, so Sunday is -1, but we want Sunday as 0
+    if days_since_sunday == 7:  # Sunday
+        days_since_sunday = 0
+    week_start = target_date - timedelta(days=days_since_sunday)
+    return week_start.strftime("%Y-%m-%d")
 
 
 @strawberry.type
-class Card:
+class PracticeSession:
     id: int
-    title: str
-    description: Optional[str]
-    list_id: int
-    position: int
-    due_date: Optional[str]
+    instrument: str
+    date: str  # YYYY-MM-DD format
+    duration_minutes: int
+    notes: Optional[str]
+    week_start: str
 
 
 @strawberry.type
-class BoardList:
-    id: int
-    name: str
-    board_id: int
-    position: int
-    cards: List[Card]
+class WeeklyPractice:
+    week_start: str  # Sunday date in YYYY-MM-DD format
+    instrument: str
+    sessions: List[PracticeSession]
+    total_minutes: int
 
 
 @strawberry.type
-class Board:
+class DayPractice:
+    date: str
+    day_name: str  # Sunday, Monday, etc.
+    sessions: List[PracticeSession]
+    total_minutes: int
+
+
+@strawberry.input
+class CreatePracticeSessionInput:
+    instrument: str
+    date: str
+    duration_minutes: int
+    notes: Optional[str] = None
+
+
+@strawberry.input
+class UpdatePracticeSessionInput:
     id: int
-    name: str
-    lists: List[BoardList]
-
-
-@strawberry.input
-class CreateBoardInput:
-    name: str
-
-
-@strawberry.input
-class CreateListInput:
-    name: str
-    board_id: int = strawberry.field(name="boardId")
-
-
-@strawberry.input
-class CreateCardInput:
-    title: str
-    description: Optional[str] = None
-    list_id: int = strawberry.field(name="listId")
-    due_date: Optional[str] = strawberry.field(name="dueDate", default=None)
-
-
-@strawberry.input
-class MoveCardInput:
-    card_id: int = strawberry.field(name="cardId")
-    target_list_id: int = strawberry.field(name="targetListId")
-    position: int
+    instrument: Optional[str] = None
+    date: Optional[str] = None
+    duration_minutes: Optional[int] = None
+    notes: Optional[str] = None
 
 
 @strawberry.type
 class Query:
     @strawberry.field
     def hello(self) -> str:
-        return "Hello Trello-like Board!"
+        return "Welcome to PracticeProgress - Your Music Learning Tracker!"
 
     @strawberry.field
-    def boards(self) -> List[Board]:
-        result = []
-        for board_data in boards_storage:
-            # Get lists for this board
-            board_lists = []
-            for list_data in sorted([l for l in lists_storage if l["board_id"] == board_data["id"]], key=lambda x: x["position"]):
-                # Get cards for this list
-                list_cards = []
-                for card_data in sorted([c for c in cards_storage if c["list_id"] == list_data["id"]], key=lambda x: x["position"]):
-                    list_cards.append(Card(
-                        id=card_data["id"],
-                        title=card_data["title"],
-                        description=card_data["description"],
-                        list_id=card_data["list_id"],
-                        position=card_data["position"],
-                        due_date=card_data["due_date"]
-                    ))
+    def practice_sessions_for_week(self, week_start: str, instrument: Optional[str] = None) -> WeeklyPractice:
+        """Get all practice sessions for a specific week and instrument"""
+        sessions = []
+        total_minutes = 0
 
-                board_lists.append(BoardList(
-                    id=list_data["id"],
-                    name=list_data["name"],
-                    board_id=list_data["board_id"],
-                    position=list_data["position"],
-                    cards=list_cards
-                ))
+        for session_data in practice_sessions_storage:
+            session_matches = session_data["week_start"] == week_start
+            if instrument:
+                session_matches = session_matches and session_data["instrument"].lower() == instrument.lower()
 
-            result.append(Board(
-                id=board_data["id"],
-                name=board_data["name"],
-                lists=board_lists
-            ))
-        return result
+            if session_matches:
+                session = PracticeSession(
+                    id=session_data["id"],
+                    instrument=session_data["instrument"],
+                    date=session_data["date"],
+                    duration_minutes=session_data["duration_minutes"],
+                    notes=session_data["notes"],
+                    week_start=session_data["week_start"]
+                )
+                sessions.append(session)
+                total_minutes += session_data["duration_minutes"]
 
-    @strawberry.field
-    def board(self, id: int) -> Optional[Board]:
-        board_data = next((board for board in boards_storage if board["id"] == id), None)
-        if not board_data:
-            return None
-
-        # Get lists for this board
-        board_lists = []
-        for list_data in sorted([l for l in lists_storage if l["board_id"] == board_data["id"]], key=lambda x: x["position"]):
-            # Get cards for this list
-            list_cards = []
-            for card_data in sorted([c for c in cards_storage if c["list_id"] == list_data["id"]], key=lambda x: x["position"]):
-                list_cards.append(Card(
-                    id=card_data["id"],
-                    title=card_data["title"],
-                    description=card_data["description"],
-                    list_id=card_data["list_id"],
-                    position=card_data["position"],
-                    due_date=card_data["due_date"]
-                ))
-
-            board_lists.append(BoardList(
-                id=list_data["id"],
-                name=list_data["name"],
-                board_id=list_data["board_id"],
-                position=list_data["position"],
-                cards=list_cards
-            ))
-
-        return Board(
-            id=board_data["id"],
-            name=board_data["name"],
-            lists=board_lists
+        return WeeklyPractice(
+            week_start=week_start,
+            instrument=instrument or "All Instruments",
+            sessions=sessions,
+            total_minutes=total_minutes
         )
+
+    @strawberry.field
+    def practice_sessions_by_day(self, week_start: str, instrument: Optional[str] = None) -> List[DayPractice]:
+        """Get practice sessions organized by day for a specific week"""
+        week_start_date = datetime.strptime(week_start, "%Y-%m-%d").date()
+        day_names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+        daily_practice = []
+
+        for i in range(7):  # 7 days in a week
+            current_date = week_start_date + timedelta(days=i)
+            date_str = current_date.strftime("%Y-%m-%d")
+            day_name = day_names[i]
+
+            # Find sessions for this day
+            day_sessions = []
+            total_minutes = 0
+
+            for session_data in practice_sessions_storage:
+                session_matches = session_data["date"] == date_str
+                if instrument:
+                    session_matches = session_matches and session_data["instrument"].lower() == instrument.lower()
+
+                if session_matches:
+                    session = PracticeSession(
+                        id=session_data["id"],
+                        instrument=session_data["instrument"],
+                        date=session_data["date"],
+                        duration_minutes=session_data["duration_minutes"],
+                        notes=session_data["notes"],
+                        week_start=session_data["week_start"]
+                    )
+                    day_sessions.append(session)
+                    total_minutes += session_data["duration_minutes"]
+
+            daily_practice.append(DayPractice(
+                date=date_str,
+                day_name=day_name,
+                sessions=day_sessions,
+                total_minutes=total_minutes
+            ))
+
+        return daily_practice
+
+    @strawberry.field
+    def available_instruments(self) -> List[str]:
+        """Get list of instruments that have been used in practice sessions"""
+        instruments = set()
+        for session in practice_sessions_storage:
+            instruments.add(session["instrument"])
+        return sorted(list(instruments))
+
+    @strawberry.field
+    def current_week_start(self) -> str:
+        """Get the Sunday date for the current week"""
+        today = date.today()
+        days_since_sunday = (today.weekday() + 1) % 7  # Convert to Sunday=0 system
+        week_start = today - timedelta(days=days_since_sunday)
+        return week_start.strftime("%Y-%m-%d")
 
 
 @strawberry.type
 class Mutation:
     @strawberry.field
-    def create_board(self, input: CreateBoardInput) -> Board:
-        global next_board_id
-        new_board = {"id": next_board_id, "name": input.name}
-        boards_storage.append(new_board)
+    def create_practice_session(self, input: CreatePracticeSessionInput) -> PracticeSession:
+        global next_session_id
 
-        board = Board(id=next_board_id, name=input.name, lists=[])
-        next_board_id += 1
-        return board
+        week_start = get_week_start(input.date)
 
-    @strawberry.field
-    def create_list(self, input: CreateListInput) -> BoardList:
-        global next_list_id
-        # Find the next position for this board
-        board_lists = [l for l in lists_storage if l["board_id"] == input.board_id]
-        next_position = len(board_lists)
-
-        new_list = {
-            "id": next_list_id,
-            "name": input.name,
-            "board_id": input.board_id,
-            "position": next_position
+        new_session = {
+            "id": next_session_id,
+            "instrument": input.instrument,
+            "date": input.date,
+            "duration_minutes": input.duration_minutes,
+            "notes": input.notes,
+            "week_start": week_start
         }
-        lists_storage.append(new_list)
 
-        board_list = BoardList(
-            id=next_list_id,
-            name=input.name,
-            board_id=input.board_id,
-            position=next_position,
-            cards=[]
+        practice_sessions_storage.append(new_session)
+
+        session = PracticeSession(
+            id=next_session_id,
+            instrument=input.instrument,
+            date=input.date,
+            duration_minutes=input.duration_minutes,
+            notes=input.notes,
+            week_start=week_start
         )
-        next_list_id += 1
-        return board_list
+
+        next_session_id += 1
+        return session
 
     @strawberry.field
-    def create_card(self, input: CreateCardInput) -> Card:
-        global next_card_id
-        # Find the next position for this list
-        list_cards = [c for c in cards_storage if c["list_id"] == input.list_id]
-        next_position = len(list_cards)
+    def update_practice_session(self, input: UpdatePracticeSessionInput) -> Optional[PracticeSession]:
+        session_data = next((s for s in practice_sessions_storage if s["id"] == input.id), None)
+        if not session_data:
+            return None
 
-        new_card = {
-            "id": next_card_id,
-            "title": input.title,
-            "description": input.description,
-            "list_id": input.list_id,
-            "position": next_position,
-            "due_date": input.due_date
-        }
-        cards_storage.append(new_card)
+        # Update fields if provided
+        if input.instrument is not None:
+            session_data["instrument"] = input.instrument
+        if input.date is not None:
+            session_data["date"] = input.date
+            session_data["week_start"] = get_week_start(input.date)
+        if input.duration_minutes is not None:
+            session_data["duration_minutes"] = input.duration_minutes
+        if input.notes is not None:
+            session_data["notes"] = input.notes
 
-        card = Card(
-            id=next_card_id,
-            title=input.title,
-            description=input.description,
-            list_id=input.list_id,
-            position=next_position,
-            due_date=input.due_date
+        return PracticeSession(
+            id=session_data["id"],
+            instrument=session_data["instrument"],
+            date=session_data["date"],
+            duration_minutes=session_data["duration_minutes"],
+            notes=session_data["notes"],
+            week_start=session_data["week_start"]
         )
-        next_card_id += 1
-        return card
 
     @strawberry.field
-    def move_card(self, input: MoveCardInput) -> bool:
-        # Find the card
-        card = next((c for c in cards_storage if c["id"] == input.card_id), None)
-        if not card:
+    def delete_practice_session(self, id: int) -> bool:
+        global practice_sessions_storage
+        session = next((s for s in practice_sessions_storage if s["id"] == id), None)
+        if not session:
             return False
 
-        old_list_id = card["list_id"]
+        original_length = len(practice_sessions_storage)
+        practice_sessions_storage = [s for s in practice_sessions_storage if s["id"] != id]
 
-        # Update card's list and position
-        card["list_id"] = input.target_list_id
-        card["position"] = input.position
-
-        # Reorder positions in the old list
-        old_list_cards = [c for c in cards_storage if c["list_id"] == old_list_id and c["id"] != input.card_id]
-        for i, c in enumerate(sorted(old_list_cards, key=lambda x: x["position"])):
-            c["position"] = i
-
-        # Reorder positions in the new list
-        new_list_cards = [c for c in cards_storage if c["list_id"] == input.target_list_id]
-        new_list_cards.sort(key=lambda x: x["position"])
-
-        # Insert the moved card at the specified position
-        for i, c in enumerate(new_list_cards):
-            if c["id"] == input.card_id:
-                continue
-            if i >= input.position:
-                c["position"] = i + 1
-
-        return True
-
-    @strawberry.field
-    def delete_card(self, id: int) -> bool:
-        global cards_storage
-        card = next((c for c in cards_storage if c["id"] == id), None)
-        if not card:
-            return False
-
-        list_id = card["list_id"]
-        original_length = len(cards_storage)
-        cards_storage = [c for c in cards_storage if c["id"] != id]
-
-        # Reorder remaining cards in the list
-        list_cards = [c for c in cards_storage if c["list_id"] == list_id]
-        for i, c in enumerate(sorted(list_cards, key=lambda x: x["position"])):
-            c["position"] = i
-
-        return len(cards_storage) < original_length
-
-    @strawberry.field
-    def delete_list(self, id: int) -> bool:
-        global lists_storage, cards_storage
-        list_data = next((l for l in lists_storage if l["id"] == id), None)
-        if not list_data:
-            return False
-
-        board_id = list_data["board_id"]
-
-        # Delete all cards in this list
-        cards_storage = [c for c in cards_storage if c["list_id"] != id]
-
-        # Delete the list
-        original_length = len(lists_storage)
-        lists_storage = [l for l in lists_storage if l["id"] != id]
-
-        # Reorder remaining lists in the board
-        board_lists = [l for l in lists_storage if l["board_id"] == board_id]
-        for i, l in enumerate(sorted(board_lists, key=lambda x: x["position"])):
-            l["position"] = i
-
-        return len(lists_storage) < original_length
-
-    @strawberry.field
-    def delete_board(self, id: int) -> bool:
-        global boards_storage, lists_storage, cards_storage
-        board = next((b for b in boards_storage if b["id"] == id), None)
-        if not board:
-            return False
-
-        # Get all list IDs for this board
-        board_list_ids = [l["id"] for l in lists_storage if l["board_id"] == id]
-
-        # Delete all cards in all lists of this board
-        cards_storage = [c for c in cards_storage if c["list_id"] not in board_list_ids]
-
-        # Delete all lists in this board
-        lists_storage = [l for l in lists_storage if l["board_id"] != id]
-
-        # Delete the board
-        original_length = len(boards_storage)
-        boards_storage = [b for b in boards_storage if b["id"] != id]
-
-        return len(boards_storage) < original_length
+        return len(practice_sessions_storage) < original_length
 
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
@@ -335,4 +269,4 @@ app.mount("/", StaticFiles(directory="app/ui", html=True), name="ui")
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to your Trello-like Board App!"}
+    return {"message": "Welcome to PracticeProgress - Your Music Learning Tracker!"}
