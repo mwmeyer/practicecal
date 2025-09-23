@@ -16,293 +16,8 @@
         ></script>
         <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
-
-            body {
-                font-family:
-                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                    sans-serif;
-                color: #1d1d1f;
-                background: #fbfbfd;
-                line-height: 1.4;
-            }
-
-            .app {
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 40px 20px;
-            }
-
-            .header {
-                text-align: center;
-                margin-bottom: 60px;
-            }
-
-            .title {
-                font-size: 32px;
-                font-weight: 600;
-                letter-spacing: -0.02em;
-                margin-bottom: 8px;
-            }
-
-            .week-nav {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 24px;
-                margin-bottom: 40px;
-            }
-
-            .week-title {
-                font-size: 17px;
-                font-weight: 500;
-                color: #6e6e73;
-                min-width: 200px;
-            }
-
-            .nav-button {
-                background: none;
-                border: none;
-                font-size: 24px;
-                color: #0066cc;
-                cursor: pointer;
-                padding: 8px;
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s ease;
-            }
-
-            .nav-button:hover {
-                background: #f2f2f7;
-            }
-
-            .total-practice {
-                text-align: center;
-                padding: 40px 20px;
-                margin-top: 40px;
-                border-top: 1px solid #d2d2d7;
-            }
-
-            .total-label {
-                font-size: 14px;
-                color: #6e6e73;
-                margin-bottom: 8px;
-                font-weight: 500;
-            }
-
-            .total-time {
-                font-size: 48px;
-                font-weight: 200;
-                color: #1d1d1f;
-                letter-spacing: -0.02em;
-                margin-bottom: 4px;
-            }
-
-            .total-subtitle {
-                font-size: 16px;
-                color: #6e6e73;
-            }
-
-            .calendar {
-                display: grid;
-                grid-template-columns: repeat(7, 1fr);
-                gap: 1px;
-                background: #d2d2d7;
-                border-radius: 12px;
-                overflow: hidden;
-                margin-bottom: 40px;
-            }
-
-            .day-header {
-                background: white;
-                padding: 16px 8px;
-                text-align: center;
-                font-size: 14px;
-                font-weight: 500;
-                color: #6e6e73;
-            }
-
-            .day-cell {
-                background: white;
-                min-height: 100px;
-                padding: 12px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                position: relative;
-            }
-
-            .day-cell:hover {
-                background: #f2f2f7;
-            }
-
-            .day-cell.has-practice {
-                background: #e8f4fd;
-            }
-
-            .day-cell.today {
-                background: #fff3cd;
-            }
-
-            .day-date {
-                font-size: 14px;
-                color: #6e6e73;
-                margin-bottom: 8px;
-            }
-
-            .day-total {
-                font-size: 16px;
-                font-weight: 600;
-                color: #0066cc;
-                margin-bottom: 8px;
-            }
-
-            .session {
-                font-size: 12px;
-                color: #6e6e73;
-                margin-bottom: 4px;
-                padding: 4px 6px;
-                background: rgba(0, 102, 204, 0.1);
-                border-radius: 4px;
-            }
-
-            .week-total {
-                text-align: center;
-                font-size: 24px;
-                font-weight: 600;
-                color: #0066cc;
-                margin-bottom: 40px;
-            }
-
-            .modal {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.3);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 1000;
-            }
-
-            .modal-content {
-                background: white;
-                border-radius: 12px;
-                padding: 32px;
-                width: 90%;
-                max-width: 400px;
-            }
-
-            .modal-title {
-                font-size: 20px;
-                font-weight: 600;
-                margin-bottom: 24px;
-                text-align: center;
-            }
-
-            .form-group {
-                margin-bottom: 20px;
-            }
-
-            .form-label {
-                font-size: 14px;
-                font-weight: 500;
-                color: #6e6e73;
-                margin-bottom: 8px;
-                display: block;
-            }
-
-            .form-input {
-                width: 100%;
-                border: 1px solid #d2d2d7;
-                border-radius: 8px;
-                padding: 12px 16px;
-                font-size: 16px;
-                background: white;
-            }
-
-            .form-input:focus {
-                outline: none;
-                border-color: #0066cc;
-            }
-
-            .form-textarea {
-                width: 100%;
-                border: 1px solid #d2d2d7;
-                border-radius: 8px;
-                padding: 12px 16px;
-                font-size: 16px;
-                background: white;
-                min-height: 80px;
-                resize: vertical;
-            }
-
-            .form-textarea:focus {
-                outline: none;
-                border-color: #0066cc;
-            }
-
-            .modal-actions {
-                display: flex;
-                gap: 12px;
-                justify-content: center;
-                margin-top: 32px;
-            }
-
-            .button {
-                border: none;
-                border-radius: 8px;
-                padding: 12px 24px;
-                font-size: 16px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-
-            .button-primary {
-                background: #0066cc;
-                color: white;
-            }
-
-            .button-primary:hover {
-                background: #0056b3;
-            }
-
-            .button-secondary {
-                background: #f2f2f7;
-                color: #1d1d1f;
-            }
-
-            .button-secondary:hover {
-                background: #e5e5ea;
-            }
-
-            .button-danger {
-                background: #ff3b30;
-                color: white;
-            }
-
-            .button-danger:hover {
-                background: #d70015;
-            }
-
-            .loading {
-                text-align: center;
-                padding: 80px 20px;
-                color: #6e6e73;
-                font-size: 18px;
-            }
-        </style>
+        <!-- External CSS -->
+        <link rel="stylesheet" href="style.css" />
     </head>
     <body>
         <div id="root"></div>
@@ -400,9 +115,7 @@
                         totalMinutes
                         sessions {
                             id
-                            instrument
                             durationMinutes
-                            notes
                         }
                     }
                 }
@@ -472,9 +185,7 @@
 
             // Modal Component
             function Modal({ isOpen, onClose, date, session, onSave }) {
-                const [instrumentValue, setInstrumentValue] = useState("");
                 const [duration, setDuration] = useState("");
-                const [notes, setNotes] = useState("");
 
                 const [createSession] = useMutation(CREATE_PRACTICE_SESSION);
                 const [updateSession] = useMutation(UPDATE_PRACTICE_SESSION);
@@ -482,18 +193,14 @@
 
                 useEffect(() => {
                     if (session) {
-                        setInstrumentValue(session.instrument);
                         setDuration(session.durationMinutes.toString());
-                        setNotes(session.notes || "");
                     } else {
-                        setInstrumentValue("");
                         setDuration("");
-                        setNotes("");
                     }
                 }, [session, isOpen]);
 
                 const handleSave = async () => {
-                    if (!instrumentValue || !duration) return;
+                    if (!duration || parseInt(duration) <= 0) return;
 
                     try {
                         if (session) {
@@ -501,9 +208,7 @@
                                 variables: {
                                     input: {
                                         id: session.id,
-                                        instrument: instrumentValue,
                                         durationMinutes: parseInt(duration),
-                                        notes: notes || null,
                                     },
                                 },
                             });
@@ -511,10 +216,8 @@
                             await createSession({
                                 variables: {
                                     input: {
-                                        instrument: instrumentValue,
                                         date,
                                         durationMinutes: parseInt(duration),
-                                        notes: notes || null,
                                     },
                                 },
                             });
@@ -547,19 +250,6 @@
                             </h3>
 
                             <div className="form-group">
-                                <label className="form-label">Instrument</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    value={instrumentValue}
-                                    onChange={(e) =>
-                                        setInstrumentValue(e.target.value)
-                                    }
-                                    placeholder="Piano, Guitar, Violin..."
-                                />
-                            </div>
-
-                            <div className="form-group">
                                 <label className="form-label">Minutes</label>
                                 <input
                                     type="number"
@@ -569,16 +259,8 @@
                                         setDuration(e.target.value)
                                     }
                                     placeholder="30"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label className="form-label">Notes</label>
-                                <textarea
-                                    className="form-textarea"
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="What did you practice?"
+                                    min="1"
+                                    autoFocus
                                 />
                             </div>
 
@@ -673,7 +355,7 @@
                 return (
                     <div className="app">
                         <header className="header">
-                            <h1 className="title">Practice Music Everyday</h1>
+                            <h1 className="title">🗓️PracticeCal</h1>
                         </header>
 
                         <div className="week-nav">
@@ -699,49 +381,56 @@
                         </div>
 
                         <div className="calendar">
-                            <div className="day-header">Sun</div>
-                            <div className="day-header">Mon</div>
-                            <div className="day-header">Tue</div>
-                            <div className="day-header">Wed</div>
-                            <div className="day-header">Thu</div>
-                            <div className="day-header">Fri</div>
-                            <div className="day-header">Sat</div>
-
-                            {practiceByDay.map((day) => (
-                                <div
-                                    key={day.date}
-                                    className={`day-cell ${
-                                        day.totalMinutes > 0
-                                            ? "has-practice"
-                                            : ""
-                                    } ${isToday(day.date) ? "today" : ""}`}
-                                    onClick={() => handleDayClick(day.date)}
-                                >
-                                    <div className="day-date">
-                                        {formatDate(day.date)}
+                            <div className="calendar-row">
+                                <div className="day-header">Sun</div>
+                                <div className="day-header">Mon</div>
+                                <div className="day-header">Tue</div>
+                                <div className="day-header">Wed</div>
+                                <div className="day-header">Thu</div>
+                                <div className="day-header">Fri</div>
+                                <div className="day-header">Sat</div>
+                            </div>
+                            <div className="calendar-row">
+                                {practiceByDay.map((day) => (
+                                    <div
+                                        key={day.date}
+                                        className={`day-cell ${
+                                            day.totalMinutes > 0
+                                                ? "has-practice"
+                                                : ""
+                                        } ${isToday(day.date) ? "today" : ""}`}
+                                        onClick={() => handleDayClick(day.date)}
+                                    >
+                                        <div className="day-date">
+                                            {formatDate(day.date)}
+                                        </div>
+                                        {day.totalMinutes > 0 && (
+                                            <div className="day-total">
+                                                {formatMinutes(
+                                                    day.totalMinutes,
+                                                )}
+                                            </div>
+                                        )}
+                                        {day.sessions.map((session) => (
+                                            <div
+                                                key={session.id}
+                                                className="session"
+                                                onClick={(e) =>
+                                                    handleSessionClick(
+                                                        session,
+                                                        day.date,
+                                                        e,
+                                                    )
+                                                }
+                                            >
+                                                {formatMinutes(
+                                                    session.durationMinutes,
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
-                                    {day.totalMinutes > 0 && (
-                                        <div className="day-total">
-                                            {formatMinutes(day.totalMinutes)}
-                                        </div>
-                                    )}
-                                    {day.sessions.map((session) => (
-                                        <div
-                                            key={session.id}
-                                            className="session"
-                                            onClick={(e) =>
-                                                handleSessionClick(
-                                                    session,
-                                                    day.date,
-                                                    e,
-                                                )
-                                            }
-                                        >
-                                            {session.instrument}
-                                        </div>
-                                    ))}
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
 
                         <div className="total-practice">

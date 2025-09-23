@@ -18,10 +18,8 @@ def get_week_start(date_str: str) -> str:
 @strawberry.type
 class PracticeSession:
     id: int
-    instrument: str
     date: str
     duration_minutes: int
-    notes: Optional[str]
 
 @strawberry.type
 class DayPractice:
@@ -36,17 +34,13 @@ class WeeklyPractice:
 
 @strawberry.input
 class CreatePracticeSessionInput:
-    instrument: str
     date: str
     duration_minutes: int
-    notes: Optional[str] = None
 
 @strawberry.input
 class UpdatePracticeSessionInput:
     id: int
-    instrument: Optional[str] = None
-    duration_minutes: Optional[int] = None
-    notes: Optional[str] = None
+    duration_minutes: int
 
 @strawberry.type
 class Query:
@@ -74,10 +68,8 @@ class Query:
                 if session["date"] == date_str:
                     day_sessions.append(PracticeSession(
                         id=session["id"],
-                        instrument=session["instrument"],
                         date=session["date"],
-                        duration_minutes=session["duration_minutes"],
-                        notes=session["notes"]
+                        duration_minutes=session["duration_minutes"]
                     ))
                     total_minutes += session["duration_minutes"]
 
@@ -113,19 +105,15 @@ class Mutation:
 
         new_session = {
             "id": next_id,
-            "instrument": input.instrument,
             "date": input.date,
-            "duration_minutes": input.duration_minutes,
-            "notes": input.notes
+            "duration_minutes": input.duration_minutes
         }
 
         sessions.append(new_session)
         session_obj = PracticeSession(
             id=next_id,
-            instrument=input.instrument,
             date=input.date,
-            duration_minutes=input.duration_minutes,
-            notes=input.notes
+            duration_minutes=input.duration_minutes
         )
 
         next_id += 1
@@ -135,19 +123,11 @@ class Mutation:
     def update_practice_session(self, input: UpdatePracticeSessionInput) -> Optional[PracticeSession]:
         for session in sessions:
             if session["id"] == input.id:
-                if input.instrument is not None:
-                    session["instrument"] = input.instrument
-                if input.duration_minutes is not None:
-                    session["duration_minutes"] = input.duration_minutes
-                if input.notes is not None:
-                    session["notes"] = input.notes
-
+                session["duration_minutes"] = input.duration_minutes
                 return PracticeSession(
                     id=session["id"],
-                    instrument=session["instrument"],
                     date=session["date"],
-                    duration_minutes=session["duration_minutes"],
-                    notes=session["notes"]
+                    duration_minutes=session["duration_minutes"]
                 )
         return None
 

@@ -1,621 +1,376 @@
 /* Reset and Base Styles */
 * {
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
 }
 
 body {
-    margin: 0;
     font-family:
         -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
+    color: #1d1d1f;
+    background: #fbfbfd;
+    line-height: 1.4;
 }
 
-/* Music Practice Calendar Styles */
-.practice-calendar {
-    max-width: 900px;
+/* App Container */
+.app {
+    max-width: 800px;
     margin: 0 auto;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(10px);
-    color: #2d3748;
+    padding: 40px 20px;
 }
 
-.calendar-header {
+/* Header */
+.header {
     text-align: center;
-    margin-bottom: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 20px;
-    padding: 20px;
-    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-    border-radius: 15px;
-    color: white;
+    margin-bottom: 60px;
 }
 
-.week-navigation {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.week-navigation h2 {
-    margin: 0;
-    font-size: 1.5rem;
+.title {
+    font-size: 32px;
     font-weight: 600;
-    color: white;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
 }
 
-.nav-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    padding: 12px 16px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 18px;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    width: 45px;
-    height: 45px;
+/* Week Navigation */
+.week-nav {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 24px;
+    margin-bottom: 40px;
 }
 
-.nav-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.5);
-    transform: scale(1.1);
+.week-title {
+    font-size: 17px;
+    font-weight: 500;
+    color: #6e6e73;
+    min-width: 200px;
+    text-align: center;
 }
 
-.instrument-section {
+.nav-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #0066cc;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    justify-content: center;
+    transition: background 0.2s ease;
 }
 
-.instrument-section label {
-    font-weight: 600;
-    color: white;
+.nav-button:hover {
+    background: #f2f2f7;
 }
 
-.instrument-input {
-    padding: 10px 15px;
-    border-radius: 8px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.9);
-    color: #2d3748;
-    min-width: 180px;
-    font-size: 14px;
-    transition: all 0.3s ease;
-}
-
-.instrument-input:focus {
-    outline: none;
-    border-color: #4299e1;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
-}
-
-.instrument-input::placeholder {
-    color: rgba(45, 55, 72, 0.6);
-}
-
-.week-grid {
-    background: white;
-    border-radius: 15px;
+/* Calendar */
+.calendar {
+    background: #d2d2d7;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    margin: 30px 0;
-    border: 3px solid #e2e8f0;
+    margin-bottom: 40px;
 }
 
-.week-header {
-    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-    color: white;
-    padding: 20px;
-    font-weight: bold;
-    text-align: center;
-    position: relative;
-    font-size: 1.2rem;
+/* Calendar Grid - Simple table-like approach */
+.calendar {
+    display: block;
 }
 
-.music-note {
-    position: absolute;
-    font-size: 24px;
-    opacity: 0.8;
-    animation: float 3s ease-in-out infinite;
-}
-
-.music-note.left {
-    left: 30px;
-    top: 50%;
-    transform: translateY(-50%);
-    animation-delay: 0s;
-}
-
-.music-note.right {
-    right: 30px;
-    top: 50%;
-    transform: translateY(-50%);
-    animation-delay: 1.5s;
-}
-
-@keyframes float {
-    0%,
-    100% {
-        transform: translateY(-50%) translateX(0px);
-    }
-    50% {
-        transform: translateY(-50%) translateX(5px);
-    }
-}
-
-.days-header {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr) 120px;
-    background: #f7fafc;
-    color: #2d3748;
-    font-weight: 600;
+.calendar-row {
+    display: flex;
 }
 
 .day-header {
-    padding: 15px 10px;
+    flex: 1;
+    background: white;
+    padding: 16px 8px;
     text-align: center;
-    border-right: 2px solid #e2e8f0;
     font-size: 14px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #4a5568;
+    font-weight: 500;
+    color: #6e6e73;
+    border-right: 1px solid #d2d2d7;
 }
 
-.total-header {
-    padding: 15px;
-    text-align: center;
-    font-weight: 700;
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-    color: white;
-    font-size: 14px;
-}
-
-.days-row {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr) 120px;
-    min-height: 140px;
+.day-header:last-child {
+    border-right: none;
 }
 
 .day-cell {
-    border-right: 2px solid #e2e8f0;
-    border-bottom: 2px solid #e2e8f0;
-    padding: 12px;
+    flex: 1;
     background: white;
-    color: #2d3748;
-    position: relative;
+    min-height: 100px;
+    padding: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background 0.2s ease;
+    border-right: 1px solid #d2d2d7;
+    border-top: 1px solid #d2d2d7;
     display: flex;
     flex-direction: column;
+    gap: 4px;
+}
+
+.day-cell:last-child {
+    border-right: none;
 }
 
 .day-cell:hover {
-    background: #f7fafc;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: #f2f2f7;
 }
 
 .day-cell.has-practice {
-    background: #e6fffa;
-    border-left: 4px solid #38b2ac;
+    background: #e8f4fd;
 }
 
 .day-cell.has-practice:hover {
-    background: #b2f5ea;
+    background: #dbeafe;
 }
 
 .day-cell.today {
-    background: #fff5f5;
-    border-left: 4px solid #f56565;
-    position: relative;
-}
-
-.day-cell.today::before {
-    content: "TODAY";
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: #f56565;
-    color: white;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: bold;
+    background: #fff3cd;
 }
 
 .day-cell.today:hover {
-    background: #fed7d7;
+    background: #fef08a;
 }
 
-.day-number {
-    font-size: 13px;
-    color: #718096;
+.day-date {
+    font-size: 14px;
+    color: #6e6e73;
     margin-bottom: 8px;
-    font-weight: 600;
 }
 
-.practice-time {
-    font-weight: bold;
-    color: #2b6cb0;
-    margin-bottom: 8px;
+.day-total {
     font-size: 16px;
-    text-align: center;
-    background: rgba(66, 153, 225, 0.1);
-    padding: 4px 8px;
-    border-radius: 6px;
+    font-weight: 600;
+    color: #0066cc;
+    margin-bottom: 8px;
 }
 
-.practice-sessions {
-    font-size: 11px;
-    color: #4a5568;
-    flex: 1;
-    overflow-y: auto;
-    max-height: 80px;
-}
-
-.session-item {
-    margin-bottom: 4px;
+.session {
+    font-size: 12px;
+    color: #6e6e73;
     padding: 4px 6px;
-    background: rgba(56, 178, 172, 0.1);
+    background: rgba(0, 102, 204, 0.1);
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    border-left: 3px solid #38b2ac;
+    transition: background 0.2s ease;
+}
+
+.session:hover {
+    background: rgba(0, 102, 204, 0.2);
+}
+
+/* Total Practice Section */
+.total-practice {
+    text-align: center;
+    padding: 40px 20px;
+    margin-top: 40px;
+    border-top: 1px solid #d2d2d7;
+}
+
+.total-label {
+    font-size: 14px;
+    color: #6e6e73;
+    margin-bottom: 8px;
     font-weight: 500;
 }
 
-.session-item:hover {
-    background: rgba(56, 178, 172, 0.2);
-    transform: translateX(2px);
+.total-time {
+    font-size: 48px;
+    font-weight: 200;
+    color: #1d1d1f;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
 }
 
-.total-cell {
-    border-bottom: 2px solid #e2e8f0;
-    padding: 15px;
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 18px;
+.total-subtitle {
+    font-size: 16px;
+    color: #6e6e73;
 }
 
-.notes-section {
-    background: linear-gradient(135deg, #fef5e7 0%, #f6e05e 20%, #fef5e7 100%);
-    border-radius: 15px;
-    padding: 25px;
-    margin: 30px 0;
-    color: #744210;
-    border: 2px solid #f6e05e;
-    position: relative;
-    overflow: hidden;
-}
-
-.notes-section::before {
-    content: "🎼";
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    font-size: 60px;
-    opacity: 0.1;
-    transform: rotate(15deg);
-}
-
-.notes-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-    font-weight: bold;
-    font-size: 18px;
-    color: #744210;
-}
-
-.notes-content {
-    line-height: 1.6;
-    background: rgba(255, 255, 255, 0.7);
-    border-radius: 10px;
-    padding: 15px;
-    border: 1px solid rgba(116, 66, 16, 0.2);
-}
-
-/* Modal Styles */
+/* Modal */
 .modal {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    backdrop-filter: blur(5px);
 }
 
 .modal-content {
     background: white;
-    padding: 35px;
-    border-radius: 20px;
-    max-width: 500px;
+    border-radius: 12px;
+    padding: 32px;
     width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-    position: relative;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
 }
 
-.modal-content::before {
-    content: "🎵";
-    position: absolute;
-    top: -15px;
-    right: -15px;
-    font-size: 40px;
-    opacity: 0.1;
-    transform: rotate(15deg);
+.modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    text-align: center;
 }
 
-.modal-header {
-    margin-bottom: 25px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #e2e8f0;
-}
-
-.modal-header h3 {
-    margin: 0 0 5px 0;
-    color: #2d3748;
-    font-size: 24px;
-    font-weight: 700;
-}
-
-.modal-header p {
-    margin: 0;
-    color: #718096;
-    font-size: 16px;
-}
-
+/* Form Elements */
 .form-group {
     margin-bottom: 20px;
 }
 
 .form-label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #2d3748;
     font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-weight: 500;
+    color: #6e6e73;
+    margin-bottom: 8px;
+    display: block;
 }
 
-.form-input,
-.form-textarea {
+.form-input {
     width: 100%;
+    border: 1px solid #d2d2d7;
+    border-radius: 8px;
     padding: 12px 16px;
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
     font-size: 16px;
-    font-family: inherit;
-    transition: all 0.3s ease;
-    background: #f7fafc;
-}
-
-.form-input:focus,
-.form-textarea:focus {
-    outline: none;
-    border-color: #4299e1;
     background: white;
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+    transition: border-color 0.2s ease;
 }
 
-.form-textarea {
-    min-height: 100px;
-    resize: vertical;
-    line-height: 1.5;
+.form-input:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
 }
 
+/* Modal Actions */
 .modal-actions {
     display: flex;
     gap: 12px;
-    justify-content: flex-end;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 2px solid #e2e8f0;
+    justify-content: center;
+    margin-top: 32px;
 }
 
-/* Button Styles */
-.btn {
-    padding: 12px 24px;
-    border-radius: 10px;
+/* Buttons */
+.button {
     border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 500;
     cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    transition: background 0.2s ease;
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+.button-primary {
+    background: #0066cc;
     color: white;
-    box-shadow: 0 4px 15px rgba(66, 153, 225, 0.3);
 }
 
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
+.button-primary:hover {
+    background: #0056b3;
 }
 
-.btn-primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
+.button-secondary {
+    background: #f2f2f7;
+    color: #1d1d1f;
 }
 
-.btn-secondary {
-    background: #e2e8f0;
-    color: #2d3748;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.button-secondary:hover {
+    background: #e5e5ea;
 }
 
-.btn-secondary:hover {
-    background: #cbd5e0;
-    transform: translateY(-1px);
-}
-
-.btn-danger {
-    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+.button-danger {
+    background: #ff3b30;
     color: white;
-    box-shadow: 0 4px 15px rgba(245, 101, 101, 0.3);
 }
 
-.btn-danger:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(245, 101, 101, 0.4);
+.button-danger:hover {
+    background: #d70015;
 }
 
-/* Loading Styles */
+/* Loading State */
 .loading {
     text-align: center;
-    padding: 60px 40px;
-    color: white;
+    padding: 80px 20px;
+    color: #6e6e73;
     font-size: 18px;
-    font-weight: 600;
-}
-
-.loading::before {
-    content: "🎵";
-    display: block;
-    font-size: 48px;
-    margin-bottom: 20px;
-    animation: spin 2s linear infinite;
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* Error Message */
-.error-message {
-    background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
-    color: #c53030;
-    padding: 15px 20px;
-    border-radius: 10px;
-    margin: 15px 0;
-    border: 2px solid #fc8181;
-    font-weight: 600;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .practice-calendar {
-        margin: 10px;
-        padding: 15px;
-        border-radius: 15px;
+    .app {
+        padding: 20px 10px;
     }
 
-    .calendar-header {
-        flex-direction: column;
-        gap: 15px;
-        text-align: center;
+    .header {
+        margin-bottom: 40px;
     }
 
-    .week-navigation {
-        flex-direction: column;
-        gap: 10px;
+    .title {
+        font-size: 28px;
     }
 
-    .week-navigation h2 {
-        font-size: 1.2rem;
+    .week-nav {
+        gap: 16px;
+        margin-bottom: 30px;
     }
 
-    .days-header {
-        grid-template-columns: repeat(7, 1fr);
-        font-size: 12px;
+    .week-title {
+        font-size: 16px;
+        min-width: 180px;
     }
 
-    .days-row {
-        grid-template-columns: repeat(7, 1fr);
-        min-height: 120px;
-    }
-
-    .total-header,
-    .total-cell {
-        display: none;
+    .nav-button {
+        width: 36px;
+        height: 36px;
+        font-size: 20px;
     }
 
     .day-header {
-        padding: 10px 5px;
-        font-size: 11px;
+        padding: 12px 4px;
+        font-size: 12px;
     }
 
     .day-cell {
+        min-height: 80px;
         padding: 8px;
-        min-height: 100px;
+    }
+
+    .day-date {
+        font-size: 12px;
+    }
+
+    .day-total {
+        font-size: 14px;
+    }
+
+    .session {
+        font-size: 11px;
+        padding: 2px 4px;
+    }
+
+    .total-time {
+        font-size: 36px;
     }
 
     .modal-content {
-        padding: 25px;
+        padding: 24px;
         margin: 20px;
     }
 
     .modal-actions {
         flex-direction: column;
-    }
-
-    .btn {
-        width: 100%;
-    }
-}
-
-@media (max-width: 480px) {
-    .instrument-input {
-        min-width: 150px;
-    }
-
-    .nav-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 16px;
-    }
-
-    .week-header {
-        padding: 15px;
-        font-size: 1rem;
-    }
-
-    .music-note.left,
-    .music-note.right {
-        font-size: 20px;
-    }
-
-    .music-note.left {
-        left: 15px;
-    }
-
-    .music-note.right {
-        right: 15px;
     }
 }
