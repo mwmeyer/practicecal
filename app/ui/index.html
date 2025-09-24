@@ -116,7 +116,7 @@
                         sessions {
                             id
                             durationMinutes
-                            audioData
+                            mediaData
                             mimeType
                         }
                     }
@@ -135,7 +135,7 @@
                 mutation ($input: CreatePracticeSessionInput!) {
                     createPracticeSession(input: $input) {
                         id
-                        audioData
+                        mediaData
                         mimeType
                     }
                 }
@@ -145,7 +145,7 @@
                 mutation ($input: UpdatePracticeSessionInput!) {
                     updatePracticeSession(input: $input) {
                         id
-                        audioData
+                        mediaData
                         mimeType
                     }
                 }
@@ -210,7 +210,6 @@
 
             // Modal Component
             function Modal({ isOpen, onClose, date, session, onSave }) {
-                const [mode, setMode] = useState("manual"); // "manual" or "record"
                 const [duration, setDuration] = useState("");
                 const [isRecording, setIsRecording] = useState(false);
                 const [recordingTime, setRecordingTime] = useState(0);
@@ -219,9 +218,9 @@
                     useState(null);
                 const [audioBlob, setAudioBlob] = useState(null);
                 const [audioUrl, setAudioUrl] = useState(null);
-                const [isPlaying, setIsPlaying] = useState(false);
-                const [audioElement, setAudioElement] = useState(null);
-                const [audioMimeType, setAudioMimeType] = useState(null);
+
+                const [mediaMimeType, setMediaMimeType] = useState(null);
+                const [cameraEnabled, setCameraEnabled] = useState(true);
 
                 const [createSession] = useMutation(CREATE_PRACTICE_SESSION);
                 const [updateSession] = useMutation(UPDATE_PRACTICE_SESSION);
@@ -230,13 +229,12 @@
                 useEffect(() => {
                     if (session) {
                         setDuration(session.durationMinutes.toString());
-                        setMode("manual");
 
                         // Handle existing audio data
-                        if (session.audioData) {
+                        if (session.mediaData) {
                             try {
                                 console.log("Loading existing audio data", {
-                                    dataLength: session.audioData.length,
+                                    dataLength: session.mediaData.length,
                                     mimeType: session.mimeType,
                                 });
 
@@ -245,7 +243,7 @@
                                     session.mimeType || "audio/webm";
 
                                 // Create blob directly from base64 using fetch
-                                const dataUrl = `data:${mimeType};base64,${session.audioData}`;
+                                const dataUrl = `data:${mimeType};base64,${session.mediaData}`;
 
                                 fetch(dataUrl)
                                     .then((res) => res.blob())
@@ -261,7 +259,7 @@
                                         const url = URL.createObjectURL(blob);
                                         setAudioBlob(blob);
                                         setAudioUrl(url);
-                                        setAudioMimeType(mimeType);
+                                        setMediaMimeType(mimeType);
 
                                         console.log(
                                             "Set audio URL for existing session:",
@@ -275,7 +273,7 @@
                                         );
                                         setAudioBlob(null);
                                         setAudioUrl(null);
-                                        setAudioMimeType(null);
+                                        setMediaMimeType(null);
                                     });
                             } catch (error) {
                                 console.error(
@@ -284,7 +282,7 @@
                                 );
                                 setAudioBlob(null);
                                 setAudioUrl(null);
-                                setAudioMimeType(null);
+                                setMediaMimeType(null);
                                 alert(
                                     "Could not load existing audio recording",
                                 );
@@ -295,13 +293,11 @@
                         }
                     } else {
                         setDuration("");
-                        setMode("manual");
                         setIsRecording(false);
                         setRecordingTime(0);
                         setAudioBlob(null);
                         setAudioUrl(null);
-                        setIsPlaying(false);
-                        setAudioMimeType(null);
+                        setMediaMimeType(null);
                     }
                 }, [session, isOpen]);
 
@@ -311,12 +307,8 @@
                         if (audioUrl) {
                             URL.revokeObjectURL(audioUrl);
                         }
-                        if (audioElement) {
-                            audioElement.pause();
-                            audioElement.currentTime = 0;
-                        }
                     };
-                }, [audioUrl, audioElement]);
+                }, [audioUrl]);
 
                 // Timer effect for recording
                 useEffect(() => {
@@ -336,26 +328,105 @@
 
                 const startRecording = async () => {
                     try {
+                        const constraints = {
+                            audio: {
+                                echoCancellation: true,
+                                noiseSuppression: true,
+                                autoGainControl: true,
+                            },
+                        };
+
+                        if (cameraEnabled) {
+                            constraints.video = {
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 },
+                                frameRate: { ideal: 30 },
+                            };
+                        }
+
                         const stream =
-                            await navigator.mediaDevices.getUserMedia({
-                                audio: true,
-                            });
-                        // Choose the best supported MIME type
-                        let mimeType = "audio/webm";
-                        if (
-                            MediaRecorder.isTypeSupported(
-                                "audio/webm;codecs=opus",
-                            )
-                        ) {
-                            mimeType = "audio/webm;codecs=opus";
-                        } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
-                            mimeType = "audio/mp4";
-                        } else if (
-                            MediaRecorder.isTypeSupported(
-                                "audio/ogg;codecs=opus",
-                            )
-                        ) {
-                            mimeType = "audio/ogg;codecs=opus";
+                            await navigator.mediaDevices.getUserMedia(
+                                constraints,
+                            );
+                        // Choose the best supported MIME type - prefer video formats
+                        let mimeType = cameraEnabled
+                            ? "video/webm"
+                            : "audio/webm";
+
+                        console.log("Codec support check:", {
+                            cameraEnabled,
+                            "video/webm":
+                                MediaRecorder.isTypeSupported("video/webm"),
+                            "video/mp4":
+                                MediaRecorder.isTypeSupported("video/mp4"),
+                            "video/webm;codecs=vp8":
+                                MediaRecorder.isTypeSupported(
+                                    "video/webm;codecs=vp8",
+                                ),
+                            "video/webm;codecs=vp9":
+                                MediaRecorder.isTypeSupported(
+                                    "video/webm;codecs=vp9",
+                                ),
+                            "audio/webm":
+                                MediaRecorder.isTypeSupported("audio/webm"),
+                            "audio/mp4":
+                                MediaRecorder.isTypeSupported("audio/mp4"),
+                        });
+
+                        if (cameraEnabled) {
+                            // Prioritize MP4 for better compatibility
+                            if (MediaRecorder.isTypeSupported("video/mp4")) {
+                                mimeType = "video/mp4";
+                            } else if (
+                                MediaRecorder.isTypeSupported("video/webm")
+                            ) {
+                                mimeType = "video/webm";
+                            }
+                        } else {
+                            if (
+                                MediaRecorder.isTypeSupported(
+                                    "audio/webm;codecs=opus",
+                                )
+                            ) {
+                                mimeType = "audio/webm;codecs=opus";
+                            } else if (
+                                MediaRecorder.isTypeSupported("audio/webm")
+                            ) {
+                                mimeType = "audio/webm";
+                            } else if (
+                                MediaRecorder.isTypeSupported("audio/mp4")
+                            ) {
+                                mimeType = "audio/mp4";
+                            }
+                        }
+
+                        console.log("Creating MediaRecorder with:", {
+                            mimeType,
+                            streamTracks: stream.getTracks().map((track) => ({
+                                kind: track.kind,
+                                label: track.label,
+                                enabled: track.enabled,
+                            })),
+                        });
+
+                        // Ensure we have the expected tracks
+                        const audioTracks = stream.getAudioTracks();
+                        const videoTracks = stream.getVideoTracks();
+
+                        console.log("Stream tracks:", {
+                            audioTracks: audioTracks.length,
+                            videoTracks: videoTracks.length,
+                            cameraEnabled,
+                        });
+
+                        if (audioTracks.length === 0) {
+                            throw new Error("No audio track available");
+                        }
+
+                        if (cameraEnabled && videoTracks.length === 0) {
+                            console.warn(
+                                "Video requested but no video track available",
+                            );
                         }
 
                         const recorder = new MediaRecorder(stream, {
@@ -385,16 +456,18 @@
                                 type: mimeType,
                             });
 
-                            console.log("Created audio blob:", {
+                            console.log("Created media blob:", {
                                 size: blob.size,
                                 type: blob.type,
                                 mimeType,
+                                chunks: audioChunks.length,
+                                firstChunkSize: audioChunks[0]?.size,
                             });
 
                             const url = URL.createObjectURL(blob);
                             setAudioBlob(blob);
                             setAudioUrl(url);
-                            setAudioMimeType(mimeType);
+                            setMediaMimeType(mimeType);
 
                             console.log("Audio blob URL created:", url);
                         };
@@ -434,93 +507,254 @@
                     return `${mins}:${secs.toString().padStart(2, "0")}`;
                 };
 
-                const playAudio = () => {
-                    console.log("playAudio called", {
-                        audioUrl,
-                        audioBlob,
-                        audioMimeType,
-                    });
+                const MediaPlayer = ({ mediaBlob, mimeType, onError }) => {
+                    const [currentTime, setCurrentTime] = React.useState(0);
+                    const [duration, setDuration] = React.useState(0);
+                    const [volume, setVolume] = React.useState(1);
+                    const [isMuted, setIsMuted] = React.useState(false);
+                    const [isPlaying, setIsPlaying] = React.useState(false);
+                    const [mediaElement, setMediaElement] =
+                        React.useState(null);
+                    const [mediaUrl, setMediaUrl] = React.useState(null);
+                    const [hasError, setHasError] = React.useState(false);
+                    const playerRef = React.useRef(null);
 
-                    if (!audioBlob) {
-                        console.error("No audio blob available");
-                        alert("No audio data available");
-                        return;
-                    }
+                    React.useEffect(() => {
+                        if (!mediaBlob) return;
 
-                    // Create a fresh URL each time to avoid stale references
-                    if (audioUrl) {
-                        URL.revokeObjectURL(audioUrl);
-                    }
+                        const url = URL.createObjectURL(mediaBlob);
+                        setMediaUrl(url);
+                        setHasError(false);
 
-                    const freshUrl = URL.createObjectURL(audioBlob);
-                    setAudioUrl(freshUrl);
+                        const isVideo =
+                            mimeType && mimeType.startsWith("video/");
+                        let media;
 
-                    console.log("Created fresh audio URL:", freshUrl);
-                    console.log("Audio blob details:", {
-                        size: audioBlob.size,
-                        type: audioBlob.type,
-                    });
+                        if (isVideo) {
+                            media = document.createElement("video");
+                            media.style.width = "100%";
+                            media.style.maxHeight = "300px";
+                            media.style.borderRadius = "8px 8px 0 0";
+                            media.style.backgroundColor = "#000";
+                        } else {
+                            media = new Audio();
+                        }
 
-                    const audio = new Audio(freshUrl);
-                    setAudioElement(audio);
-                    setIsPlaying(true);
+                        media.src = url;
+                        media.preload = "metadata";
 
-                    audio.onended = () => {
-                        setIsPlaying(false);
-                        console.log("Audio playback ended");
-                    };
+                        media.onloadedmetadata = () => {
+                            setDuration(media.duration);
+                            setCurrentTime(0);
+                        };
 
-                    audio.onerror = (e) => {
-                        setIsPlaying(false);
-                        console.error("Audio playback error:", e, audio.error);
-                        alert(
-                            `Error playing audio: ${audio.error ? audio.error.message : "Unknown error"}`,
-                        );
-                    };
+                        media.ontimeupdate = () => {
+                            setCurrentTime(media.currentTime);
+                        };
 
-                    audio.onloadstart = () => {
-                        console.log("Audio loading started");
-                    };
-
-                    audio.oncanplay = () => {
-                        console.log("Audio can play");
-                        audio.play().catch((error) => {
+                        media.onended = () => {
                             setIsPlaying(false);
-                            console.error("Audio play error:", error);
-                            alert("Error starting audio playback");
-                        });
-                    };
-                };
+                            setCurrentTime(0);
+                        };
 
-                const stopAudio = () => {
-                    if (audioElement) {
-                        audioElement.pause();
-                        audioElement.currentTime = 0;
-                        setIsPlaying(false);
+                        media.onerror = () => {
+                            setHasError(true);
+                            setIsPlaying(false);
+                            if (onError) onError();
+                        };
+
+                        media.onvolumechange = () => {
+                            setVolume(media.volume);
+                            setIsMuted(media.muted);
+                        };
+
+                        setMediaElement(media);
+
+                        if (isVideo && playerRef.current) {
+                            const videoContainer =
+                                playerRef.current.querySelector(
+                                    ".video-container",
+                                );
+                            if (videoContainer) {
+                                videoContainer.innerHTML = "";
+                                videoContainer.appendChild(media);
+                            }
+                        }
+
+                        return () => {
+                            URL.revokeObjectURL(url);
+                        };
+                    }, [mediaBlob, mimeType]);
+
+                    const togglePlay = () => {
+                        if (!mediaElement) return;
+
+                        if (isPlaying) {
+                            mediaElement.pause();
+                            setIsPlaying(false);
+                        } else {
+                            mediaElement
+                                .play()
+                                .then(() => {
+                                    setIsPlaying(true);
+                                })
+                                .catch((error) => {
+                                    console.error("Play error:", error);
+                                    setHasError(true);
+                                    if (onError) onError();
+                                });
+                        }
+                    };
+
+                    const handleSeek = (e) => {
+                        if (!mediaElement || !duration) return;
+                        const rect = e.target.getBoundingClientRect();
+                        const percent = (e.clientX - rect.left) / rect.width;
+                        const newTime = percent * duration;
+                        mediaElement.currentTime = newTime;
+                        setCurrentTime(newTime);
+                    };
+
+                    const handleVolumeChange = (e) => {
+                        if (!mediaElement) return;
+                        const newVolume = parseFloat(e.target.value);
+                        mediaElement.volume = newVolume;
+                        setVolume(newVolume);
+                    };
+
+                    const toggleMute = () => {
+                        if (!mediaElement) return;
+                        mediaElement.muted = !mediaElement.muted;
+                        setIsMuted(mediaElement.muted);
+                    };
+
+                    const handleDownload = () => {
+                        if (!mediaBlob) return;
+
+                        const isVideo =
+                            mimeType && mimeType.startsWith("video/");
+                        const extension = isVideo ? ".webm" : ".webm";
+                        const filename = `practice-recording-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}${extension}`;
+
+                        const url = URL.createObjectURL(mediaBlob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    };
+
+                    const formatTime = (time) => {
+                        const minutes = Math.floor(time / 60);
+                        const seconds = Math.floor(time % 60);
+                        return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+                    };
+
+                    if (hasError) {
+                        return (
+                            <div className="media-player error">
+                                <div className="error-message">
+                                    ⚠️ Unable to play media
+                                    <button
+                                        onClick={handleDownload}
+                                        className="download-fallback"
+                                    >
+                                        💾 Download to play externally
+                                    </button>
+                                </div>
+                            </div>
+                        );
                     }
+
+                    const isVideo = mimeType && mimeType.startsWith("video/");
+
+                    return (
+                        <div className="media-player" ref={playerRef}>
+                            {isVideo && <div className="video-container"></div>}
+                            {!isVideo && (
+                                <div className="audio-visualizer">
+                                    🎵 Audio Recording
+                                </div>
+                            )}
+                            <div className="player-controls">
+                                <div className="control-row">
+                                    <button
+                                        className="play-pause-btn"
+                                        onClick={togglePlay}
+                                        disabled={!mediaElement}
+                                    >
+                                        {isPlaying ? "⏸️" : "▶️"}
+                                    </button>
+                                    <div className="progress-container">
+                                        <div
+                                            className="progress-bar"
+                                            onClick={handleSeek}
+                                        >
+                                            <div
+                                                className="progress-filled"
+                                                style={{
+                                                    width: `${(currentTime / duration) * 100}%`,
+                                                }}
+                                            ></div>
+                                        </div>
+                                        <div className="time-display">
+                                            {formatTime(currentTime)} /{" "}
+                                            {formatTime(duration)}
+                                        </div>
+                                    </div>
+                                    <div className="volume-controls">
+                                        <button
+                                            className="mute-btn"
+                                            onClick={toggleMute}
+                                        >
+                                            {isMuted ? "🔇" : "🔊"}
+                                        </button>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="1"
+                                            step="0.1"
+                                            value={isMuted ? 0 : volume}
+                                            onChange={handleVolumeChange}
+                                            className="volume-slider"
+                                        />
+                                    </div>
+                                    <button
+                                        className="download-btn"
+                                        onClick={handleDownload}
+                                        title="Download recording"
+                                    >
+                                        💾
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
                 };
 
                 const handleSave = async () => {
-                    const finalDuration =
-                        mode === "record"
-                            ? Math.max(1, Math.ceil(recordingTime / 60))
-                            : parseInt(duration);
+                    const finalDuration = Math.max(
+                        1,
+                        Math.ceil(recordingTime / 60),
+                    );
 
                     if (!finalDuration || finalDuration <= 0) return;
 
                     try {
-                        let audioData = null;
+                        let mediaData = null;
                         let mimeType = null;
-                        if (mode === "record" && audioBlob) {
+                        if (audioBlob) {
                             console.log("Converting audio blob to base64:", {
                                 blobSize: audioBlob.size,
                                 blobType: audioBlob.type,
                             });
-                            audioData = await blobToBase64(audioBlob);
-                            mimeType = audioMimeType;
+                            mediaData = await blobToBase64(audioBlob);
+                            mimeType = mediaMimeType;
                             console.log(
                                 "Audio data converted, size:",
-                                audioData.length,
+                                mediaData.length,
                             );
                         }
 
@@ -530,7 +764,7 @@
                                     input: {
                                         id: session.id,
                                         durationMinutes: finalDuration,
-                                        audioData: audioData,
+                                        mediaData: mediaData,
                                         mimeType: mimeType,
                                     },
                                 },
@@ -541,7 +775,7 @@
                                     input: {
                                         date,
                                         durationMinutes: finalDuration,
-                                        audioData: audioData,
+                                        mediaData: mediaData,
                                         mimeType: mimeType,
                                     },
                                 },
@@ -574,31 +808,24 @@
                                 {session ? "Edit Practice" : "Add Practice"}
                             </h3>
 
-                            {!session && (
+                            {!session ? (
                                 <div className="form-group">
-                                    <div className="mode-selector">
-                                        <button
-                                            type="button"
-                                            className={`mode-button ${mode === "record" ? "active" : ""}`}
-                                            onClick={() => setMode("record")}
-                                            disabled={isRecording}
-                                        >
-                                            🎙️ Record
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className={`mode-button ${mode === "manual" ? "active" : ""}`}
-                                            onClick={() => setMode("manual")}
-                                            disabled={isRecording}
-                                        >
-                                            ⏱️ Manual
-                                        </button>
+                                    <div className="camera-toggle">
+                                        <label className="form-label">
+                                            <input
+                                                type="checkbox"
+                                                checked={cameraEnabled}
+                                                onChange={(e) =>
+                                                    setCameraEnabled(
+                                                        e.target.checked,
+                                                    )
+                                                }
+                                                disabled={isRecording}
+                                            />
+                                            📹 Record Video (uncheck for
+                                            audio-only)
+                                        </label>
                                     </div>
-                                </div>
-                            )}
-
-                            {mode === "record" && !session ? (
-                                <div className="form-group">
                                     <div className="recording-controls">
                                         {!isRecording ? (
                                             <button
@@ -642,73 +869,36 @@
                                                 )}{" "}
                                                 minutes)
                                             </div>
-                                            {audioUrl && (
-                                                <div className="audio-controls">
-                                                    {!isPlaying ? (
-                                                        <button
-                                                            type="button"
-                                                            className="audio-button play"
-                                                            onClick={playAudio}
-                                                        >
-                                                            ▶️ Play Recording
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            type="button"
-                                                            className="audio-button stop"
-                                                            onClick={stopAudio}
-                                                        >
-                                                            ⏸️ Stop Playback
-                                                        </button>
-                                                    )}
-                                                </div>
+                                            {audioBlob && (
+                                                <MediaPlayer
+                                                    mediaBlob={audioBlob}
+                                                    mimeType={mediaMimeType}
+                                                    onError={() => {
+                                                        console.error(
+                                                            "Media player error",
+                                                        );
+                                                    }}
+                                                />
                                             )}
                                         </div>
                                     )}
                                 </div>
-                            ) : (
-                                <div className="form-group">
-                                    <label className="form-label">
-                                        Minutes
-                                    </label>
-                                    <input
-                                        type="number"
-                                        className="form-input"
-                                        value={duration}
-                                        onChange={(e) =>
-                                            setDuration(e.target.value)
-                                        }
-                                        placeholder="30"
-                                        min="1"
-                                        autoFocus={mode === "manual"}
-                                    />
-                                </div>
-                            )}
+                            ) : null}
 
-                            {session && session.audioData && audioUrl && (
+                            {session && session.mediaData && audioBlob && (
                                 <div className="form-group">
                                     <label className="form-label">
-                                        Recorded Audio
+                                        Recorded Media
                                     </label>
-                                    <div className="existing-audio-controls">
-                                        {!isPlaying ? (
-                                            <button
-                                                type="button"
-                                                className="audio-button play"
-                                                onClick={playAudio}
-                                            >
-                                                ▶️ Play Recording
-                                            </button>
-                                        ) : (
-                                            <button
-                                                type="button"
-                                                className="audio-button stop"
-                                                onClick={stopAudio}
-                                            >
-                                                ⏸️ Stop Playback
-                                            </button>
-                                        )}
-                                    </div>
+                                    <MediaPlayer
+                                        mediaBlob={audioBlob}
+                                        mimeType={mediaMimeType}
+                                        onError={() => {
+                                            console.error(
+                                                "Media player error for existing session",
+                                            );
+                                        }}
+                                    />
                                 </div>
                             )}
 
@@ -733,12 +923,7 @@
                                     className="button button-primary"
                                     onClick={handleSave}
                                     disabled={
-                                        isRecording ||
-                                        (mode === "manual" &&
-                                            (!duration ||
-                                                parseInt(duration) <= 0)) ||
-                                        (mode === "record" &&
-                                            recordingTime === 0)
+                                        isRecording || recordingTime === 0
                                     }
                                 >
                                     Save
@@ -886,7 +1071,7 @@
                                                         session.durationMinutes,
                                                     )}
                                                 </div>
-                                                {session.audioData && (
+                                                {session.mediaData && (
                                                     <div className="session-audio-indicator">
                                                         🎙️
                                                     </div>
