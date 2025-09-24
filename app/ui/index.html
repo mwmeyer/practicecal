@@ -801,12 +801,31 @@
 
                 if (!isOpen) return null;
 
+                const handleBackdropClick = (e) => {
+                    if (e.target === e.currentTarget && !isRecording) {
+                        onClose();
+                    }
+                };
+
                 return (
-                    <div className="modal">
+                    <div className="modal" onClick={handleBackdropClick}>
                         <div className="modal-content">
                             <h3 className="modal-title">
-                                {session ? "Edit Practice" : "Add Practice"}
+                                {session ? "Practice Session" : "Add Practice"}
                             </h3>
+                            {session && (
+                                <div className="practice-date">
+                                    {new Date(date).toLocaleDateString(
+                                        "en-US",
+                                        {
+                                            weekday: "long",
+                                            year: "numeric",
+                                            month: "long",
+                                            day: "numeric",
+                                        },
+                                    )}
+                                </div>
+                            )}
 
                             {!session ? (
                                 <div className="form-group">
@@ -887,9 +906,6 @@
 
                             {session && session.mediaData && audioBlob && (
                                 <div className="form-group">
-                                    <label className="form-label">
-                                        Recorded Media
-                                    </label>
                                     <MediaPlayer
                                         mediaBlob={audioBlob}
                                         mimeType={mediaMimeType}
@@ -899,6 +915,14 @@
                                             );
                                         }}
                                     />
+                                    <div className="session-info">
+                                        <div className="duration-info">
+                                            Duration:{" "}
+                                            {formatMinutes(
+                                                session.durationMinutes,
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
@@ -908,7 +932,7 @@
                                     onClick={onClose}
                                     disabled={isRecording}
                                 >
-                                    Cancel
+                                    {session ? "Close" : "Cancel"}
                                 </button>
                                 {session && (
                                     <button
@@ -919,15 +943,17 @@
                                         Delete
                                     </button>
                                 )}
-                                <button
-                                    className="button button-primary"
-                                    onClick={handleSave}
-                                    disabled={
-                                        isRecording || recordingTime === 0
-                                    }
-                                >
-                                    Save
-                                </button>
+                                {!session && (
+                                    <button
+                                        className="button button-primary"
+                                        onClick={handleSave}
+                                        disabled={
+                                            isRecording || recordingTime === 0
+                                        }
+                                    >
+                                        Save
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1073,7 +1099,12 @@
                                                 </div>
                                                 {session.mediaData && (
                                                     <div className="session-audio-indicator">
-                                                        🎙️
+                                                        {session.mimeType &&
+                                                        session.mimeType.startsWith(
+                                                            "video/",
+                                                        )
+                                                            ? "📹"
+                                                            : "🎙️"}
                                                     </div>
                                                 )}
                                             </div>
