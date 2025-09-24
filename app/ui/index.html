@@ -508,129 +508,31 @@
                 };
 
                 const MediaPlayer = ({ mediaBlob, mimeType, onError }) => {
-                    const [currentTime, setCurrentTime] = React.useState(0);
-                    const [duration, setDuration] = React.useState(0);
-                    const [volume, setVolume] = React.useState(1);
-                    const [isMuted, setIsMuted] = React.useState(false);
-                    const [isPlaying, setIsPlaying] = React.useState(false);
-                    const [mediaElement, setMediaElement] =
-                        React.useState(null);
                     const [mediaUrl, setMediaUrl] = React.useState(null);
                     const [hasError, setHasError] = React.useState(false);
-                    const playerRef = React.useRef(null);
 
                     React.useEffect(() => {
                         if (!mediaBlob) return;
 
-                        const url = URL.createObjectURL(mediaBlob);
-                        setMediaUrl(url);
-                        setHasError(false);
-
-                        const isVideo =
-                            mimeType && mimeType.startsWith("video/");
-                        let media;
-
-                        if (isVideo) {
-                            media = document.createElement("video");
-                            media.style.width = "100%";
-                            media.style.maxHeight = "300px";
-                            media.style.borderRadius = "8px 8px 0 0";
-                            media.style.backgroundColor = "#000";
-                        } else {
-                            media = new Audio();
-                        }
-
-                        media.src = url;
-                        media.preload = "metadata";
-
-                        media.onloadedmetadata = () => {
-                            setDuration(media.duration);
-                            setCurrentTime(0);
-                        };
-
-                        media.ontimeupdate = () => {
-                            setCurrentTime(media.currentTime);
-                        };
-
-                        media.onended = () => {
-                            setIsPlaying(false);
-                            setCurrentTime(0);
-                        };
-
-                        media.onerror = () => {
+                        try {
+                            const url = URL.createObjectURL(mediaBlob);
+                            setMediaUrl(url);
+                            setHasError(false);
+                        } catch (error) {
+                            console.error("Error creating media URL:", error);
                             setHasError(true);
-                            setIsPlaying(false);
                             if (onError) onError();
-                        };
-
-                        media.onvolumechange = () => {
-                            setVolume(media.volume);
-                            setIsMuted(media.muted);
-                        };
-
-                        setMediaElement(media);
-
-                        if (isVideo && playerRef.current) {
-                            const videoContainer =
-                                playerRef.current.querySelector(
-                                    ".video-container",
-                                );
-                            if (videoContainer) {
-                                videoContainer.innerHTML = "";
-                                videoContainer.appendChild(media);
-                            }
                         }
 
                         return () => {
-                            URL.revokeObjectURL(url);
+                            if (mediaUrl) {
+                                URL.revokeObjectURL(mediaUrl);
+                            }
                         };
                     }, [mediaBlob, mimeType]);
 
-                    const togglePlay = () => {
-                        if (!mediaElement) return;
-
-                        if (isPlaying) {
-                            mediaElement.pause();
-                            setIsPlaying(false);
-                        } else {
-                            mediaElement
-                                .play()
-                                .then(() => {
-                                    setIsPlaying(true);
-                                })
-                                .catch((error) => {
-                                    console.error("Play error:", error);
-                                    setHasError(true);
-                                    if (onError) onError();
-                                });
-                        }
-                    };
-
-                    const handleSeek = (e) => {
-                        if (!mediaElement || !duration) return;
-                        const rect = e.target.getBoundingClientRect();
-                        const percent = (e.clientX - rect.left) / rect.width;
-                        const newTime = percent * duration;
-                        mediaElement.currentTime = newTime;
-                        setCurrentTime(newTime);
-                    };
-
-                    const handleVolumeChange = (e) => {
-                        if (!mediaElement) return;
-                        const newVolume = parseFloat(e.target.value);
-                        mediaElement.volume = newVolume;
-                        setVolume(newVolume);
-                    };
-
-                    const toggleMute = () => {
-                        if (!mediaElement) return;
-                        mediaElement.muted = !mediaElement.muted;
-                        setIsMuted(mediaElement.muted);
-                    };
-
                     const handleDownload = () => {
                         if (!mediaBlob) return;
-
                         const isVideo =
                             mimeType && mimeType.startsWith("video/");
                         const extension = isVideo ? ".webm" : ".webm";
@@ -646,15 +548,9 @@
                         URL.revokeObjectURL(url);
                     };
 
-                    const formatTime = (time) => {
-                        const minutes = Math.floor(time / 60);
-                        const seconds = Math.floor(time % 60);
-                        return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-                    };
-
                     if (hasError) {
                         return (
-                            <div className="media-player error">
+                            <div className="professional-media-player error">
                                 <div className="error-message">
                                     ⚠️ Unable to play media
                                     <button
@@ -668,67 +564,70 @@
                         );
                     }
 
+                    if (!mediaUrl) {
+                        return (
+                            <div className="professional-media-player">
+                                <div className="loading-message">
+                                    Loading...
+                                </div>
+                            </div>
+                        );
+                    }
+
                     const isVideo = mimeType && mimeType.startsWith("video/");
 
                     return (
-                        <div className="media-player" ref={playerRef}>
-                            {isVideo && <div className="video-container"></div>}
-                            {!isVideo && (
-                                <div className="audio-visualizer">
-                                    🎵 Audio Recording
-                                </div>
-                            )}
-                            <div className="player-controls">
-                                <div className="control-row">
-                                    <button
-                                        className="play-pause-btn"
-                                        onClick={togglePlay}
-                                        disabled={!mediaElement}
+                        <div className="professional-media-player">
+                            <div className="media-wrapper">
+                                {isVideo ? (
+                                    <video
+                                        src={mediaUrl}
+                                        controls
+                                        width="100%"
+                                        height="300"
+                                        style={{
+                                            borderRadius: "8px",
+                                            backgroundColor: "#000",
+                                        }}
+                                        onError={() => {
+                                            setHasError(true);
+                                            if (onError) onError();
+                                        }}
                                     >
-                                        {isPlaying ? "⏸️" : "▶️"}
-                                    </button>
-                                    <div className="progress-container">
-                                        <div
-                                            className="progress-bar"
-                                            onClick={handleSeek}
-                                        >
-                                            <div
-                                                className="progress-filled"
-                                                style={{
-                                                    width: `${(currentTime / duration) * 100}%`,
-                                                }}
-                                            ></div>
+                                        Your browser does not support video
+                                        playback.
+                                    </video>
+                                ) : (
+                                    <div className="audio-player-wrapper">
+                                        <div className="audio-visualizer">
+                                            🎵 Audio Recording
                                         </div>
-                                        <div className="time-display">
-                                            {formatTime(currentTime)} /{" "}
-                                            {formatTime(duration)}
-                                        </div>
-                                    </div>
-                                    <div className="volume-controls">
-                                        <button
-                                            className="mute-btn"
-                                            onClick={toggleMute}
+                                        <audio
+                                            src={mediaUrl}
+                                            controls
+                                            style={{
+                                                width: "100%",
+                                                marginTop: "16px",
+                                            }}
+                                            onError={() => {
+                                                setHasError(true);
+                                                if (onError) onError();
+                                            }}
                                         >
-                                            {isMuted ? "🔇" : "🔊"}
-                                        </button>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="1"
-                                            step="0.1"
-                                            value={isMuted ? 0 : volume}
-                                            onChange={handleVolumeChange}
-                                            className="volume-slider"
-                                        />
+                                            Your browser does not support audio
+                                            playback.
+                                        </audio>
                                     </div>
-                                    <button
-                                        className="download-btn"
-                                        onClick={handleDownload}
-                                        title="Download recording"
-                                    >
-                                        💾
-                                    </button>
-                                </div>
+                                )}
+                            </div>
+                            <div className="download-section">
+                                <button
+                                    onClick={handleDownload}
+                                    className="download-btn"
+                                    title="Download recording"
+                                >
+                                    💾 Download
+                                </button>
                             </div>
                         </div>
                     );
