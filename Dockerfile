@@ -11,4 +11,4 @@ WORKDIR /app
 RUN uv sync --locked --no-cache
 
 # Run the application.
-CMD ["/app/.venv/bin/fastapi", "run", "app/main.py", "--port", "80"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

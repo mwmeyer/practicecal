@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi[standard]>=0.112.1",
+    "fastapi",
     "strawberry-graphql[fastapi]>=0.282.0",
+    "uvicorn",
 ]
