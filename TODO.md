@@ -2,7 +2,7 @@ This is a list of improvements todo!
 
 PRODUCT:
 * [] Add root landing page
-* [] Add practice suggestions
+* [] Add practice goals and suggestions
 * [] Center current day and show historical practice sessions ( instead of just the current week )
 
 BACKEND:
@@ -15,3 +15,7 @@ FRONTEND:
 * [] Add css framework like [tailwind](https://tailwindcss.com)
 * [] Add [urql](https://github.com/urql-graphql/urql) graphql client instead of a pure JS
 * [] Better audio handling / use [react-video-audio-player](https://github.com/Walidadebayo/react-video-audio-player)
+
+ARCH:
+* [] Move recording time tracking from frontend ( interval elapsed time ) to backend ( audio file processing )
+* [] Pagination
