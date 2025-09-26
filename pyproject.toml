@@ -6,6 +6,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi",
+    "httpx",
+    "pytest>=8.4.2",
     "strawberry-graphql[fastapi]>=0.282.0",
     "uvicorn",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = "."
+testpaths = "tests"

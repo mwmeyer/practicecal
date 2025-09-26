@@ -158,5 +158,10 @@ class Mutation:
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
 app = FastAPI()
+
+@app.get("/health")
+async def health_check():
+    return {"msg": "Hello World"}
+
 app.include_router(GraphQLRouter(schema), prefix="/graphql")
 app.mount("/", StaticFiles(directory="app/ui", html=True), name="ui")

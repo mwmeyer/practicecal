@@ -28,3 +28,8 @@ Open [localhost:8000](http://localhost:8000) and start tracking your practice.
 Available on fly.io at https://practicecal.fly.dev.
 
 Deploy updates with the `flyctl deploy` command.
+
+## Testing
+test files are under `/test`
+
+run with `uv run pytest`
